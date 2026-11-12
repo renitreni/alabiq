@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Basmati rice">
+  <rect width="400" height="300" fill="#E7F6EE"/>
+  <rect x="130" y="85" width="140" height="130" rx="8" fill="#F97316" stroke="#C2410C" stroke-width="3"/>
+  <rect x="145" y="100" width="110" height="75" rx="4" fill="#FFF7ED"/>
+  <path d="M150 120 q55 -8 110 0 M150 140 q55 6 110 0 M150 160 q55 -4 110 0" fill="none" stroke="#D4D4D8" stroke-width="3"/>
+  <text x="200" y="195" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="800" font-size="14" fill="#fff">5 KG</text>
+</svg>

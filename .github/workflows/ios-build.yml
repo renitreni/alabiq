@@ -1,0 +1,99 @@
+name: Build iOS app
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/ios-build.yml"
+      - "alabiq-web-main/frontend/**"
+  push:
+    branches:
+      - full
+      - main
+      - master
+    paths:
+      - ".github/workflows/ios-build.yml"
+      - "alabiq-web-main/frontend/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ios-simulator:
+    name: iOS Simulator (unsigned)
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: alabiq-web-main/frontend
+
+    env:
+      VITE_API_BASE: ${{ vars.VITE_API_BASE || 'https://api.alabiq.com' }}
+      VITE_MAP_PROVIDER: ${{ vars.VITE_MAP_PROVIDER || 'google' }}
+      VITE_GOOGLE_MAPS_BROWSER_KEY: ${{ vars.VITE_GOOGLE_MAPS_BROWSER_KEY }}
+      VITE_GOOGLE_MAP_ID: ${{ vars.VITE_GOOGLE_MAP_ID }}
+      VITE_MAPBOX_ACCESS_TOKEN: ${{ vars.VITE_MAPBOX_ACCESS_TOKEN }}
+      VITE_MAPBOX_STYLE: ${{ vars.VITE_MAPBOX_STYLE || 'mapbox://styles/mapbox/streets-v12' }}
+      VITE_TAP_PUBLIC_KEY: ${{ vars.VITE_TAP_PUBLIC_KEY }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: alabiq-web-main/frontend/package-lock.json
+
+      - name: Show Apple toolchain
+        run: xcodebuild -version
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build web app and sync Capacitor
+        run: |
+          npm run build
+          npx cap sync ios
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -resolvePackageDependencies
+
+      - name: Build unsigned iOS Simulator app
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package simulator app
+        run: |
+          app_path="$(find "$RUNNER_TEMP/DerivedData/Build/Products/Release-iphonesimulator" -maxdepth 1 -type d -name '*.app' -print -quit)"
+          test -n "$app_path"
+          ditto -c -k --sequesterRsrc --keepParent \
+            "$app_path" \
+            "$RUNNER_TEMP/SmartMappia-iOS-Simulator.zip"
+
+      - name: Upload simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: SmartMappia-iOS-Simulator-${{ github.sha }}
+          path: ${{ runner.temp }}/SmartMappia-iOS-Simulator.zip
+          if-no-files-found: error
+          retention-days: 14

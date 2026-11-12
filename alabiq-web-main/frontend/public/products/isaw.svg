@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Isaw">
+  <rect width="400" height="300" fill="#FFF7ED"/>
+  <ellipse cx="200" cy="250" rx="120" ry="14" fill="#000" opacity="0.08"/>
+  <rect x="110" y="200" width="180" height="10" rx="5" fill="#92400E"/>
+  <path d="M130 200 Q135 120 140 200" fill="none" stroke="#78350F" stroke-width="5"/>
+  <path d="M170 200 Q175 100 180 200" fill="none" stroke="#78350F" stroke-width="5"/>
+  <path d="M210 200 Q215 110 220 200" fill="none" stroke="#78350F" stroke-width="5"/>
+  <path d="M250 200 Q255 115 260 200" fill="none" stroke="#78350F" stroke-width="5"/>
+  <path d="M135 130 Q140 125 145 130 Q150 140 140 145 Q130 140 135 130" fill="#EA580C"/>
+  <path d="M175 110 Q180 105 185 110 Q190 120 180 125 Q170 120 175 110" fill="#EA580C"/>
+  <path d="M215 120 Q220 115 225 120 Q230 130 220 135 Q210 130 215 120" fill="#EA580C"/>
+  <path d="M255 125 Q260 120 265 125 Q270 135 260 140 Q250 135 255 125" fill="#EA580C"/>
+</svg>

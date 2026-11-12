@@ -1,0 +1,23 @@
+App/build
+App/Pods
+App/output
+App/App/public
+DerivedData
+xcuserdata
+
+# Cordova plugins for Capacitor
+capacitor-cordova-ios-plugins
+
+# Generated Config files
+App/App/capacitor.config.json
+App/App/config.xml
+
+# Signing material — certificates, private keys and profiles NEVER enter git.
+# The release keystore equivalent on Android lives outside the repo for the
+# same reason (see docs/ANDROID.md).
+*.mobileprovision
+*.p12
+*.cer
+*.certSigningRequest
+*.p8
+ExportOptions.plist

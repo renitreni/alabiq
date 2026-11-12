@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Fresh laban">
+  <rect width="400" height="300" fill="#E7F6EE"/>
+  <path d="M145 95 h110 l-12 130 a14 14 0 0 1 -14 12 h-58 a14 14 0 0 1 -14 -12 z" fill="#fff" stroke="#0B7A3E" stroke-width="3"/>
+  <rect x="138" y="88" width="124" height="14" rx="7" fill="#fff" stroke="#0B7A3E" stroke-width="3"/>
+  <rect x="165" y="130" width="70" height="55" rx="6" fill="#F0FDF4"/>
+  <text x="200" y="165" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="800" font-size="18" fill="#0B7A3E">Laban</text>
+</svg>

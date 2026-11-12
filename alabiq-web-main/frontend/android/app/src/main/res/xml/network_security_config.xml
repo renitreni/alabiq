@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Without this file the WebView validates TLS against the device's system CA store
+  alone, which is frozen at the OS release for everything below API 34. minSdk is 24,
+  so an Android 7.0 handset can genuinely be missing ISRG Root X1 (it landed in 7.1.1)
+  and fail every call to api.alabiq.com before a byte is sent. Bundling the roots
+  our two endpoints chain to — Google Trust Services for *.supabase.co, ISRG for
+  alabiq.com — makes the trust decision the same on every supported device.
+
+  These entries only ADD anchors next to "system"; nothing is pinned and nothing the
+  device already trusts is taken away, so a phone with a current store behaves exactly
+  as it does today. Both CAs currently serve compatibility chains that terminate at
+  older roots, so this is insurance rather than the sole path — revisit if either CA
+  retires a root (GTS R1/R4 expire 2036, ISRG X1 2035, X2 2040).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="@raw/gtsr1" />
+            <certificates src="@raw/gtsr4" />
+            <certificates src="@raw/isrgrootx1" />
+            <certificates src="@raw/isrgrootx2" />
+        </trust-anchors>
+    </base-config>
+
+    <!--
+      Applies only to debuggable builds, never to a release APK. Apps targeting API 24+
+      ignore user-installed CAs, so a debug proxy (Charles, mitmproxy, HTTP Toolkit) or
+      a VPN that inspects TLS shows up as "Trust anchor for certification path not
+      found" even though Chrome on the same handset loads the URL fine. Trusting user
+      anchors here keeps QA able to capture traffic, and it doubles as the test that
+      tells those interception failures apart from a real certificate problem.
+    -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 280" role="img" aria-label="Kuy's street food">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EFF6FF"/>
+      <stop offset="100%" stop-color="#DBEAFE"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="280" fill="url(#bg)"/>
+  <ellipse cx="200" cy="232" rx="150" ry="18" fill="#000" opacity="0.08"/>
+  <rect x="110" y="178" width="180" height="10" rx="5" fill="#92400E"/>
+  <line x1="140" y1="178" x2="140" y2="125" stroke="#78350F" stroke-width="3"/>
+  <line x1="200" y1="178" x2="200" y2="115" stroke="#78350F" stroke-width="3"/>
+  <line x1="260" y1="178" x2="260" y2="128" stroke="#78350F" stroke-width="3"/>
+  <ellipse cx="140" cy="122" rx="16" ry="12" fill="#F59E0B"/>
+  <ellipse cx="200" cy="112" rx="16" ry="12" fill="#EA580C"/>
+  <ellipse cx="260" cy="125" rx="16" ry="12" fill="#F59E0B"/>
+  <ellipse cx="300" cy="175" rx="32" ry="38" fill="#FFF" stroke="#93C5FD" stroke-width="2"/>
+  <circle cx="290" cy="162" r="8" fill="#FBBF24"/>
+  <circle cx="308" cy="170" r="8" fill="#FBBF24"/>
+  <circle cx="300" cy="186" r="8" fill="#FBBF24"/>
+  <rect x="85" y="145" width="55" height="35" rx="6" fill="#1D4ED8" opacity="0.15"/>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Ajwa dates">
+  <rect width="400" height="300" fill="#E7F6EE"/>
+  <rect x="120" y="80" width="160" height="120" rx="12" fill="#fff" stroke="#0B7A3E" stroke-width="3"/>
+  <ellipse cx="155" cy="130" rx="18" ry="24" fill="#5D4037"/>
+  <ellipse cx="200" cy="125" rx="18" ry="24" fill="#6D4C41"/>
+  <ellipse cx="245" cy="130" rx="18" ry="24" fill="#5D4037"/>
+  <ellipse cx="178" cy="160" rx="16" ry="22" fill="#6D4C41"/>
+  <ellipse cx="222" cy="158" rx="16" ry="22" fill="#5D4037"/>
+  <rect x="155" y="205" width="90" height="22" rx="6" fill="#0B7A3E" opacity="0.15"/>
+</svg>

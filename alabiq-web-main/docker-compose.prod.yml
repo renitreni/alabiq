@@ -1,0 +1,15 @@
+# Production overlay for the Docker stack (see DEPLOYMENT-PLAN.md).
+#
+# The base docker-compose.yml is the self-contained dev stack. Production on
+# srv1777854 keeps the host nginx + Certbot in front, so this overlay:
+#   - publishes the API on 127.0.0.1:4001 (host nginx api.alabiq.com
+#     proxies here; the old PM2 process keeps 127.0.0.1:4000 for rollback)
+#   - does not publish the frontend container (the host nginx site for
+#     alabiq.com keeps serving a statically built dist)
+#
+# Usage on the server:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+services:
+  api:
+    ports:
+      - "127.0.0.1:4001:4000"

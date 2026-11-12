@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Pita bread">
+  <rect width="400" height="300" fill="#E7F6EE"/>
+  <ellipse cx="200" cy="155" rx="100" ry="70" fill="#FEF3C7" stroke="#D97706" stroke-width="3"/>
+  <ellipse cx="200" cy="155" rx="70" ry="48" fill="#FFFBEB" stroke="#F59E0B" stroke-width="2" opacity="0.8"/>
+  <path d="M160 155 q40 -18 80 0" fill="none" stroke="#D97706" stroke-width="2" opacity="0.5"/>
+  <path d="M155 170 q45 12 90 0" fill="none" stroke="#D97706" stroke-width="2" opacity="0.5"/>
+</svg>

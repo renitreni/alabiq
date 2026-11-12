@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Mixed nuts">
+  <rect width="400" height="300" fill="#E7F6EE"/>
+  <ellipse cx="200" cy="165" rx="95" ry="55" fill="#D97706" stroke="#92400E" stroke-width="3"/>
+  <ellipse cx="175" cy="150" rx="14" ry="10" fill="#92400E"/>
+  <ellipse cx="210" cy="145" rx="12" ry="9" fill="#78350F"/>
+  <ellipse cx="230" cy="165" rx="13" ry="9" fill="#92400E"/>
+  <ellipse cx="185" cy="175" rx="11" ry="8" fill="#78350F"/>
+  <ellipse cx="215" cy="180" rx="12" ry="8" fill="#A16207"/>
+  <circle cx="200" cy="158" r="8" fill="#FEF3C7"/>
+</svg>

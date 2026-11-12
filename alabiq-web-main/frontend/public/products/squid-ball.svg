@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Squid ball">
+  <rect width="400" height="300" fill="#FFF7ED"/>
+  <ellipse cx="200" cy="250" rx="120" ry="14" fill="#000" opacity="0.08"/>
+  <ellipse cx="200" cy="175" rx="75" ry="55" fill="#fff" stroke="#DC2626" stroke-width="3"/>
+  <circle cx="175" cy="160" r="16" fill="#FBBF24" stroke="#F59E0B" stroke-width="2"/>
+  <circle cx="210" cy="150" r="16" fill="#FBBF24" stroke="#F59E0B" stroke-width="2"/>
+  <circle cx="230" cy="175" r="16" fill="#FBBF24" stroke="#F59E0B" stroke-width="2"/>
+  <circle cx="185" cy="190" r="14" fill="#FBBF24" stroke="#F59E0B" stroke-width="2"/>
+  <circle cx="215" cy="195" r="14" fill="#FBBF24" stroke="#F59E0B" stroke-width="2"/>
+  <line x1="160" y1="130" x2="175" y2="145" stroke="#78350F" stroke-width="3" stroke-linecap="round"/>
+  <line x1="240" y1="130" x2="225" y2="145" stroke="#78350F" stroke-width="3" stroke-linecap="round"/>
+</svg>

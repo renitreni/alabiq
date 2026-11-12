@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 280" role="img" aria-label="Black Pinoy food">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#374151"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="280" fill="url(#bg)"/>
+  <ellipse cx="200" cy="230" rx="150" ry="18" fill="#000" opacity="0.25"/>
+  <ellipse cx="200" cy="168" rx="95" ry="28" fill="#F5F5F5" stroke="#D1D5DB" stroke-width="3"/>
+  <ellipse cx="200" cy="158" rx="70" ry="18" fill="#5D4037"/>
+  <path d="M145 150 q55 -20 110 0" fill="#6D4C41"/>
+  <circle cx="165" cy="145" r="10" fill="#388E3C"/>
+  <circle cx="195" cy="138" r="12" fill="#388E3C"/>
+  <circle cx="230" cy="145" r="9" fill="#388E3C"/>
+  <rect x="250" y="118" width="48" height="8" rx="4" fill="#8D6E63" transform="rotate(25 274 122)"/>
+  <rect x="258" y="128" width="48" height="8" rx="4" fill="#8D6E63" transform="rotate(25 282 132)"/>
+  <ellipse cx="120" cy="185" rx="22" ry="8" fill="#FFF3E0" opacity="0.9"/>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Kwek-Kwek">
+  <rect width="400" height="300" fill="#FEF3C7"/>
+  <ellipse cx="200" cy="250" rx="120" ry="14" fill="#000" opacity="0.08"/>
+  <ellipse cx="200" cy="175" rx="90" ry="55" fill="#DC2626"/>
+  <ellipse cx="200" cy="170" rx="75" ry="42" fill="#F59E0B"/>
+  <circle cx="165" cy="155" r="22" fill="#FBBF24" stroke="#D97706" stroke-width="3"/>
+  <circle cx="200" cy="145" r="22" fill="#FBBF24" stroke="#D97706" stroke-width="3"/>
+  <circle cx="235" cy="155" r="22" fill="#FBBF24" stroke="#D97706" stroke-width="3"/>
+  <circle cx="182" cy="178" r="18" fill="#FBBF24" stroke="#D97706" stroke-width="3"/>
+  <circle cx="218" cy="178" r="18" fill="#FBBF24" stroke="#D97706" stroke-width="3"/>
+  <rect x="120" y="210" width="160" height="28" rx="8" fill="#fff" stroke="#DC2626" stroke-width="2"/>
+  <text x="200" y="230" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="700" font-size="14" fill="#991B1B">KWEK-KWEK</text>
+</svg>

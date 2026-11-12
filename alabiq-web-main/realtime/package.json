@@ -1,0 +1,8 @@
+{
+  "name": "alabiq-realtime",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "redis": "^5.8.2" }
+}

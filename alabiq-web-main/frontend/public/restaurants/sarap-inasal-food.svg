@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 280" role="img" aria-label="Sarap Inasal food">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFF7ED"/>
+      <stop offset="100%" stop-color="#FFEDD5"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="280" fill="url(#bg)"/>
+  <ellipse cx="200" cy="232" rx="150" ry="18" fill="#000" opacity="0.08"/>
+  <rect x="155" y="175" width="90" height="14" rx="4" fill="#D97706"/>
+  <ellipse cx="200" cy="145" rx="58" ry="42" fill="#EA580C"/>
+  <path d="M150 145 q50 -30 100 0 q-50 30 -100 0" fill="#C2410C"/>
+  <path d="M165 130 q35 -12 70 0" fill="none" stroke="#92400E" stroke-width="3" stroke-linecap="round"/>
+  <path d="M160 155 q40 8 80 0" fill="none" stroke="#78350F" stroke-width="2" stroke-linecap="round"/>
+  <ellipse cx="200" cy="195" rx="55" ry="16" fill="#FFFBEB" stroke="#FDE68A" stroke-width="2"/>
+  <circle cx="285" cy="120" r="16" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2"/>
+  <path d="M285 108 v24 M277 116 h16" stroke="#D97706" stroke-width="2" stroke-linecap="round"/>
+</svg>

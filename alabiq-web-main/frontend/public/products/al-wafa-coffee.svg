@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Arabic coffee">
+  <rect width="400" height="300" fill="#E7F6EE"/>
+  <rect x="145" y="95" width="110" height="120" rx="8" fill="#78350F" stroke="#451A03" stroke-width="3"/>
+  <rect x="158" y="108" width="84" height="55" rx="4" fill="#92400E"/>
+  <circle cx="200" cy="190" r="18" fill="#D97706"/>
+  <path d="M255 130 h30 a12 12 0 0 1 0 24 h-30" fill="none" stroke="#78350F" stroke-width="4"/>
+  <ellipse cx="200" cy="135" rx="30" ry="8" fill="#451A03" opacity="0.5"/>
+</svg>

@@ -1,0 +1,145 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-alabiq}
+      POSTGRES_USER: ${POSTGRES_USER:-alabiq}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      APP_DB_USER: ${APP_DB_USER:-alabiq_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Set APP_DB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init/10-app-role.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [app]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [app]
+
+  minio:
+    image: ghcr.io/librefs/librefs:latest
+    restart: unless-stopped
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-alabiq}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
+    volumes:
+      - object_data:/data
+    healthcheck:
+      test: ["CMD", "/usr/bin/bash", "-lc", "</dev/tcp/127.0.0.1/9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks: [app]
+
+  realtime:
+    build: ./realtime
+    restart: unless-stopped
+    environment:
+      PORT: 4100
+      REDIS_URL: redis://redis:6379
+      REALTIME_PUBLISH_TOKEN: ${REALTIME_PUBLISH_TOKEN:?Set REALTIME_PUBLISH_TOKEN in .env}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4100/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [app]
+
+  migrate:
+    build: ./backend
+    command: ["node", "scripts/migrate.js"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER:-alabiq}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-alabiq}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [app]
+
+  seed-reference:
+    build: ./backend
+    command: ["node", "scripts/seed-reference-data.js"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER:-alabiq}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-alabiq}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks: [app]
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      REALTIME_INTERNAL_URL: http://realtime:4100
+      REALTIME_PUBLISH_TOKEN: ${REALTIME_PUBLISH_TOKEN:?Set REALTIME_PUBLISH_TOKEN in .env}
+      DATABASE_URL: postgres://${APP_DB_USER:-alabiq_app}:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-alabiq}
+      OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      OBJECT_STORAGE_REGION: us-east-1
+      OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-alabiq}
+      OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      OBJECT_STORAGE_FORCE_PATH_STYLE: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      seed-reference:
+        condition: service_completed_successfully
+      realtime:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    expose: ["4000"]
+    # Host publish lives in the BASE file (not only docker-compose.prod.yml)
+    # so a plain `docker compose up -d` can never silently drop the mapping
+    # again — see DEPLOYMENT-PLAN.md §10 incident 2026-10-22. Compose v2
+    # dedupes the identical entry when the prod overlay is also used.
+    ports:
+      - "127.0.0.1:4001:4000"
+    networks: [app]
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE: /
+    restart: unless-stopped
+    depends_on: [api]
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    networks: [app]
+
+volumes:
+  postgres_data:
+  redis_data:
+  object_data:
+
+networks:
+  app:
+    driver: bridge

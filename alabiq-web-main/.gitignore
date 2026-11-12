@@ -1,0 +1,37 @@
+# Safety net for anything that lands at the project root.
+# (frontend/ and backend/ each have their own .gitignore too.)
+
+node_modules/
+dist/
+dist-ssr/
+.vite/
+build/
+
+# Never commit real environment files — only the .example templates.
+.env
+.env.*
+!.env.example
+!.env.docker.example
+
+# Documentation is local/private reference only and never ships to GitHub.
+# The repo has public remotes; docs/ carries the deployment topology, the confidential
+# margin/net_price money model, security audit findings, the admin runbook, and
+# docs/ANDROID.md (release signing password in plaintext).
+# The two READMEs (backend/, frontend/) are the only documentation a GitHub reader sees,
+# so keep those self-contained rather than linking into docs/.
+docs/
+
+# QA scaffolding. These carry hardcoded test passwords and call
+# auth.admin.createUser / delete() directly, bypassing every control in the
+# real signup path. The handbook (Part 13 §13.8.2) says they must never be
+# committed and Part 13 §13.12 requires them absent from any deployed
+# environment — but nothing was actually enforcing that, so a single
+# `git add -A` would have pushed a working password to four remotes.
+backend/scripts/_qa_*.js
+
+# Logs & OS/editor cruft
+*.log
+npm-debug.log*
+.DS_Store
+.idea/
+*.sw?

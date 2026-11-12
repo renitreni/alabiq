@@ -1,0 +1,7 @@
+# Canonical author identities.
+#
+# 13 commits were authored while the local git user.name was set to an old
+# company name, but from the same GitHub account and the same email as every
+# other commit. git blame, log and shortlog all read this file, so the gutter
+# in an editor shows the real author without rewriting a single commit.
+Rafael Harnisch <111173438+Rizzkkk@users.noreply.github.com> BI-LLC <111173438+Rizzkkk@users.noreply.github.com>

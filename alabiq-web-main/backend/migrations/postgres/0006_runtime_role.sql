@@ -1,0 +1,15 @@
+-- Give the API a least-privilege login, separate from the migration owner.
+DO $$
+DECLARE role_exists boolean;
+BEGIN
+  SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'alabiq_app') INTO role_exists;
+  IF role_exists THEN
+    EXECUTE 'GRANT USAGE ON SCHEMA public TO alabiq_app';
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO alabiq_app';
+    EXECUTE 'GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO alabiq_app';
+    EXECUTE 'GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO alabiq_app';
+    EXECUTE 'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO alabiq_app';
+    EXECUTE 'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO alabiq_app';
+    EXECUTE 'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO alabiq_app';
+  END IF;
+END $$;

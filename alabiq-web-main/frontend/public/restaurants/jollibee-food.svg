@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 280" role="img" aria-label="Jollibee food">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFF5F5"/>
+      <stop offset="100%" stop-color="#FEE2E2"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="280" fill="url(#bg)"/>
+  <ellipse cx="200" cy="232" rx="150" ry="18" fill="#000" opacity="0.08"/>
+  <ellipse cx="155" cy="165" rx="52" ry="38" fill="#FFC72C"/>
+  <path d="M120 165 q35 -28 70 0 q-35 28 -70 0" fill="#E23B31"/>
+  <path d="M130 155 q25 -10 50 0" fill="none" stroke="#B71C1C" stroke-width="2" stroke-linecap="round"/>
+  <ellipse cx="265" cy="170" rx="48" ry="32" fill="#FFF8E1" stroke="#FFE082" stroke-width="2"/>
+  <path d="M230 170 q35 -8 70 0" fill="none" stroke="#E53935" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="250" cy="168" r="5" fill="#E53935"/>
+  <circle cx="270" cy="165" r="5" fill="#E53935"/>
+  <circle cx="290" cy="168" r="5" fill="#E53935"/>
+  <rect x="175" y="95" width="50" height="36" rx="6" fill="#E23B31"/>
+  <rect x="181" y="101" width="38" height="24" rx="4" fill="#FFC72C"/>
+</svg>

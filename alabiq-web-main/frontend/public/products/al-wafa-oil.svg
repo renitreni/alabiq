@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Cooking oil">
+  <rect width="400" height="300" fill="#E7F6EE"/>
+  <rect x="155" y="70" width="90" height="160" rx="10" fill="#FEF9C3" stroke="#CA8A04" stroke-width="3"/>
+  <rect x="168" y="85" width="64" height="50" rx="4" fill="#FDE047"/>
+  <rect x="175" y="145" width="50" height="70" rx="4" fill="#EAB308"/>
+  <text x="200" y="178" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="800" font-size="16" fill="#854D0E">OIL</text>
+  <rect x="185" y="55" width="30" height="18" rx="4" fill="#CA8A04"/>
+</svg>

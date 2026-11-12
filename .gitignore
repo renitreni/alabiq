@@ -1,0 +1,6 @@
+# Local MCP config — contains a personal Hostinger API token, never commit.
+.mcp.json
+
+# Claude Code agent/config files (local machine only — settings.local.json etc.)
+.claude/
+ALABIQ-backup-*.bundle
