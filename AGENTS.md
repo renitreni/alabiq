@@ -42,13 +42,17 @@ trust `DOCKER.md`, `DEPLOYMENT-PLAN.md`, and this file instead.
 | CI | GitHub Actions: unsigned iOS simulator build (`.github/workflows/ios-build.yml`) |
 | Legacy | PM2 process `alabiq-api` on `127.0.0.1:4000` kept for rollback only |
 
-### Production topology (DEPLOYMENT-PLAN.md §5)
+### Production topology (DEPLOYMENT-PLAN.md §5 + 2026-11-13 entry — the current truth)
 
 ```
-alabiq.com      → nginx static dist (rebuilt from repo)
-api.alabiq.com  → nginx → 127.0.0.1:4001 (docker api)   [SSE-safe /api/events block kept]
-compose network      → postgres, redis, minio, realtime, api  [private, no host ports]
+alabiq.yaramay.online → nginx static dist (/var/www/alabiq, copied from the frontend image)
+                      /api/ → nginx → 127.0.0.1:4001 (docker api)   [SSE-safe /api/events block kept]
+live checkout:  /opt/SmartMappiaa/alabiq-docker  (compose at alabiq-web-main/, project pinned: -p smartmappia-web-main)
+old checkout:  /opt/SmartMappiaa/smartmappiaa-docker  (kept as rollback, do not delete)
+compose network      → postgres, redis, minio, realtime, api, worker  [private, no host ports]
 ```
+
+⚠ Production DB roles still use the **old names** (`smartmappia` / `smartmappia_app` / db `smartmappia`) — pinned in the live checkout's `.env`. Deploy = force-push branch to the server bare repo + `git reset --hard` + rebuild; full procedure in DEPLOYMENT-PLAN.md (2026-11-13 entry).
 
 ---
 
@@ -161,7 +165,7 @@ docker compose down          # keep data · add -v to ERASE db/redis/objects
 # Backend (standalone, needs DATABASE_URL + deps)
 cd alabiq-web-main/backend
 npm run dev                  # node --watch server.js
-npm test                     # node --test (49 test files)
+npm test                     # node --test (358 tests incl. syntax gate)
 npm run db:migrate           # node scripts/migrate.js
 
 # Frontend
@@ -181,13 +185,19 @@ npm run reset:orders · delete:account
 
 ## 7. Git & branches
 
-- Remotes: `origin` (your-org/ALABIQ, HEAD → `full`), `server-deploy`
-  (your-org/ALABIQ-server-deploy — **remote URL embeds a GitHub PAT; treat as leaked, rotate it**).
-- Active branches: `full` (integration, CI target), `main`, `apk`, `ios`,
-  `feat-fix-restaurant-orders` (current), `feat-manual-admin-password`, and a
-  macos-runner test branch.
-- Recent work: restaurant-orders 500 fix + regression tests, admin sidebar/profile
-  fixes, manual admin password input (create + reset).
+- Remotes: `origin` = `git@github.com:renitreni/alabiq.git` (canonical since the
+  2026-11-13 rebrand; history is unrelated to the old SmartMappiaa repos). The
+  old PAT-bearing remotes are gone from this clone.
+- Deploy conduit: server bare repo `root@187.127.100.178:/opt/SmartMappiaa/smartmappiaa.git`,
+  branch `full` (**force-push** — unrelated histories), consumed by the live
+  checkout per DEPLOYMENT-PLAN.md (2026-11-13 entry).
+- Active branches: `feat-restaurant-delivery-api` (current), `main`.
+- Recent work: Phase 7 (2026-11-13) — partner item-pricing validation +
+  migrations 0010–0011, `payment_method 'external'`, `delivery_quotes.distance_km`,
+  worker service enabled (Redis GPS hot path), full Alabiq rebrand
+  (web/Android/iOS). Also fixed: truncated `deliveriesController.js` (API boot
+  crash, now covered by `test/syntaxGate.test.js`), worker webhook import bug,
+  undeclared `redis` dependency.
 
 ---
 

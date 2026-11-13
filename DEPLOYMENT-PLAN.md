@@ -188,6 +188,28 @@ docker compose up -d api      # Restart API container
 
 ---
 
+### 2026-11-13 — Partner-API fixes + Alabiq rebrand deployed (commit `de2be5c`) ✅
+
+**Canonical repo is now `renitreni/alabiq`** (branch `feat-restaurant-delivery-api`, pushed to `origin`). The Alabiq repo history is unrelated to the old SmartMappiaa history, so deploys **force-push** the branch to the server bare repo: `git push --force root@187.127.100.178:/opt/SmartMappiaa/smartmappiaa.git <branch>:refs/heads/full`.
+
+**New live checkout:** `/opt/SmartMappiaa/alabiq-docker` (clone of the bare repo; compose file at `alabiq-web-main/`). The old checkout `/opt/SmartMappiaa/smartmappiaa-docker/smartmappia-web-main` is kept untouched as rollback. Deploy steps:
+1. `git fetch /opt/SmartMappiaa/smartmappiaa.git full && git reset --hard <sha>` in the new checkout.
+2. Compose **must pin the project name** to reuse existing volumes: `docker compose -p smartmappiaa-web-main ...` (without it, compose derives `alabiq-web-main` from the directory and would start an empty DB).
+3. `docker compose -p smartmappia-web-main build api worker` → `up -d` → verify `curl https://alabiq.yaramay.online/api/health`.
+4. Frontend: `docker compose build frontend`, then `docker cp` `/usr/share/nginx/html/.` from a throwaway container into `/var/www/alabiq` (keep the previous dist at `/var/www/alabiq.old` until verified).
+
+**Production DB roles still use the old names** — the DB predates the rebrand: `POSTGRES_USER=smartmappia`, `POSTGRES_DB=smartmappia`, `APP_DB_USER=smartmappia_app` (pinned in the checkout's `alabiq-web-main/.env`; passwords from the old checkout's `.env`). Migration 0006's stored checksum was updated once to match the rebrand-touched file (role-name strings only; the applied grants still target `smartmappia_app`, and default privileges keep covering new tables).
+
+**Live site is `alabiq.yaramay.online`** (nginx → `/var/www/alabiq`, `/api/` → `127.0.0.1:4001`). There is no `alabiq.com` nginx site on this box despite earlier docs.
+
+**What shipped:** migrations 0008–0011 (partner API schema, `payment_method 'external'`, `delivery_quotes.distance_km`), partner item-pricing validation, full Alabiq rebrand (web/Android/iOS assets), the `worker` service enabled with Redis GPS hot path.
+
+**Incidents fixed during this deploy** (see commits `2bc04b5`…`de2be5c`):
+- `deliveriesController.js` was truncated since Phase 6 (`buildDeliveryResponse` missing `}`) — API crash-looped; unit tests never loaded the controller. A syntax gate test (`test/syntaxGate.test.js`, node --check over controllers/routes/lib/middleware) now covers this.
+- `worker.js` webhook processor destructured a non-existent named export — every tick crashed. Also `redis` was used but undeclared in `backend/package.json` (GPS path silently fell back to Postgres).
+
+---
+
 ### Phase 4 — cutover complete (2026-10-16) ✅
 
 - Frontend `dist` rebuilt from the Drop-Supabase code (no active Supabase deps; remaining "supabase" strings are passive legacy-URL handling) and deployed to the new checkout.
