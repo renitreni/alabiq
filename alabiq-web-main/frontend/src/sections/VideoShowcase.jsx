@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Play, Pause } from "lucide-react";
 
 const highlights = [
-  "Order food or book airport rides in one app",
+  "Order from Riyadh's best restaurants in one app",
   "Real-time GPS tracking on every delivery",
   "Secure STC Pay payments and instant notifications",
 ];

@@ -5,7 +5,6 @@ import {
   MapPin,
   Search,
   ShoppingCart,
-  Plane,
   Home,
   Package,
   User,
@@ -24,15 +23,15 @@ import {
 import { restaurants, flashingRestaurants } from "../data/restaurants";
 
 // Shop screen intentionally absent: the Shop vertical is feature-flagged off
-// (SHOP_ENABLED), so the mockup only demos live surfaces — food and rides.
+// (SHOP_ENABLED), so the mockup only demos the live surface — food delivery.
 const screens = [
   { id: "food", label: "Food", Icon: UtensilsCrossed },
-  { id: "track", label: "Pick & Drop", Icon: MapPin },
+  { id: "track", label: "Live Tracking", Icon: MapPin },
 ];
 
 const categories = [
   { label: "Food", Icon: UtensilsCrossed, active: true },
-  { label: "Ride", Icon: Plane, active: false },
+  { label: "Deals", Icon: Flame, active: false },
 ];
 
 const bottomNavItems = [
@@ -251,7 +250,7 @@ function TrackScreen() {
           </div>
           <div className="flex-1">
             <p className="text-sm font-black text-brand-black">Ahmed is delivering</p>
-            <p className="text-xs text-brand-grey">Toyota Camry • ABC 1234</p>
+            <p className="text-xs text-brand-grey">Delivery rider • 2 min away</p>
           </div>
           <button className="bg-brand-orange text-white p-2.5 rounded-xl shadow-md shadow-brand-orange/25">
             <Phone className="w-4 h-4" strokeWidth={2.25} />
@@ -329,9 +328,9 @@ const PhoneMockup = () => {
           transition={{ delay: 0.7 }}
           className="absolute left-0 sm:-left-6 top-[30%] z-30 bg-white border border-brand-border rounded-2xl px-5 py-4 shadow-xl hidden md:block"
         >
-          <p className="text-xs text-brand-grey font-medium">Airport pick & drop</p>
-          <p className="text-3xl font-black text-brand-black mt-1">SAR 100</p>
-          <p className="text-[10px] text-brand-orange font-bold mt-1">Flat base rate</p>
+          <p className="text-xs text-brand-grey font-medium">Average delivery</p>
+          <p className="text-3xl font-black text-brand-black mt-1">~30 min</p>
+          <p className="text-[10px] text-brand-orange font-bold mt-1">Within 15 km radius</p>
         </motion.div>
 
         <motion.div
@@ -347,7 +346,7 @@ const PhoneMockup = () => {
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
             </span>
           </p>
-          <p className="text-white/60 text-[10px] mt-1.5">GPS tracking on every trip</p>
+          <p className="text-white/60 text-[10px] mt-1.5">GPS tracking on every order</p>
         </motion.div>
 
         <div

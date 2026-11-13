@@ -1,18 +1,12 @@
 // Mobile landing storefront. Desktop keeps the marketing hero + phone
-// mockup; below 2xl this *is* the entry point — Food first, then Pick & Drop.
-// Tabs sit under search. Live listings only: empty/error states
-// rather than invented catalogues.
-//
-// The Shop tab was removed along with the Shop vertical's storefront: it is
-// feature-flagged off (SHOP_ENABLED) and renders an empty state when off, so
-// there is nothing to surface here until the flag goes back on.
+// mockup; below 2xl this *is* the entry point — food delivery only.
+// Live listings only: empty/error states rather than invented catalogues.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ChevronDown,
   MapPin,
-  PlaneTakeoff,
   Search,
   UtensilsCrossed,
 } from 'lucide-react';
@@ -25,11 +19,6 @@ import FoodRestaurantCard, {
 import { useMarketingPartners } from '../lib/useMarketingPartners';
 import ShopHeroBanner from '../components/ShopHeroBanner';
 
-const TABS = [
-  { id: 'food', label: 'Food', Icon: UtensilsCrossed, to: '/services/food' },
-  { id: 'ride', label: 'Pick & Drop', Icon: PlaneTakeoff, to: '/book' },
-];
-
 const easeOut = [0.22, 1, 0.36, 1];
 
 export default function MobileMarketplaceHome() {
@@ -37,7 +26,6 @@ export default function MobileMarketplaceHome() {
   const { session, profile } = useAuth();
   const food = useMarketingPartners();
 
-  const [tab, setTab] = useState('food');
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [locOpen, setLocOpen] = useState(false);
@@ -78,11 +66,7 @@ export default function MobileMarketplaceHome() {
     e.preventDefault();
     setSearchOpen(false);
     const q = query.trim();
-    if (tab === 'food') {
-      navigate(q ? `/services/food?q=${encodeURIComponent(q)}` : '/services/food');
-      return;
-    }
-    navigate('/book');
+    navigate(q ? `/services/food?q=${encodeURIComponent(q)}` : '/services/food');
   }
 
   function openRestaurant(listing) {
@@ -163,16 +147,14 @@ export default function MobileMarketplaceHome() {
                   setQuery(e.target.value);
                   setSearchOpen(true);
                 }}
-                onFocus={() => {
-                  if (tab !== 'ride') setSearchOpen(true);
-                }}
+                onFocus={() => setSearchOpen(true)}
                 placeholder="Search restaurants..."
                 className="w-full h-12 rounded-2xl bg-white border border-brand-border pl-11 pr-4 text-sm text-brand-dark placeholder:text-brand-grey shadow-sm outline-none focus:border-brand-orange/40 focus:ring-2 focus:ring-brand-orange/15 transition-[border-color,box-shadow] duration-300 ease-out"
                 autoComplete="off"
               />
             </label>
             <AnimatePresence>
-              {searchOpen && tab !== 'ride' && (
+              {searchOpen && (
                 <SearchSuggest
                   query={query}
                   restaurants={suggestRestaurants}
@@ -184,53 +166,14 @@ export default function MobileMarketplaceHome() {
             </AnimatePresence>
           </form>
         </div>
-
-        <nav
-          className="mt-3 bg-white border border-brand-border rounded-2xl shadow-sm p-1.5 flex items-center"
-          aria-label="Services"
-        >
-          {TABS.map((item) => {
-            const isActive = item.id === tab;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  setTab(item.id);
-                  setSearchOpen(false);
-                }}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl text-[11px] font-black cursor-pointer transition-all duration-300 ease-out ${
-                  isActive ? 'bg-brand-orange text-white shadow-md shadow-brand-orange/25' : 'text-brand-grey'
-                }`}
-              >
-                <item.Icon className="w-4 h-4" strokeWidth={2.3} />
-                {item.id === 'ride' ? 'Ride' : item.label}
-              </button>
-            );
-          })}
-        </nav>
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={tab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25, ease: easeOut }}
-        >
-          {tab === 'food' && (
-            <FoodPane
-              loading={food.loading}
-              failed={food.failed}
-              listings={visibleRestaurants}
-              onOpen={openRestaurant}
-            />
-          )}
-
-          {tab === 'ride' && <RidePane />}
-        </motion.div>
-      </AnimatePresence>
+      <FoodPane
+        loading={food.loading}
+        failed={food.failed}
+        listings={visibleRestaurants}
+        onOpen={openRestaurant}
+      />
     </motion.section>
   );
 }
@@ -284,31 +227,6 @@ function FoodPane({ loading, failed, listings, onOpen }) {
           </div>
         )}
       </section>
-    </div>
-  );
-}
-
-function RidePane() {
-  return (
-    <div className="px-4">
-      <div className="rounded-3xl bg-white border border-brand-border p-5 shadow-sm">
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-brand-orange">
-          <PlaneTakeoff className="w-3.5 h-3.5" strokeWidth={2.4} />
-          Airport rides
-        </span>
-        <h2 className="text-xl font-black text-brand-black tracking-tight mt-2 leading-tight">
-          House to terminal, tracked live.
-        </h2>
-        <p className="text-sm text-brand-grey font-medium mt-2 leading-relaxed">
-          Book a pick & drop to or from Riyadh airports. Fixed rates, no surprise extras.
-        </p>
-        <Link
-          to="/book"
-          className="mt-4 inline-flex items-center justify-center w-full h-12 rounded-xl bg-brand-orange text-white text-sm font-black shadow-md shadow-brand-orange/20"
-        >
-          Book a ride
-        </Link>
-      </div>
     </div>
   );
 }

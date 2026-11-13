@@ -1,11 +1,10 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { UtensilsCrossed, Percent, Flame, PlaneTakeoff } from 'lucide-react';
+import { UtensilsCrossed, Percent, Flame } from 'lucide-react';
 
-// Tiles map to live surfaces only: the food service tabs (restaurants / deals /
-// trending) and the airport pick & drop booking page. The groceries & shops
-// tabs were dropped — they render an empty state while the Shop vertical is
-// feature-flagged off (SHOP_ENABLED).
+// Tiles map to the food service tabs (restaurants / deals / trending). The
+// groceries & shops tabs were dropped — they render an empty state while the
+// Shop vertical is feature-flagged off (SHOP_ENABLED).
 const CATEGORIES = [
   {
     id: 'food',
@@ -37,16 +36,6 @@ const CATEGORIES = [
     color: 'text-amber-600',
     ring: 'hover:border-amber-300',
   },
-  {
-    id: 'rides',
-    label: 'Rides',
-    hint: 'Airport',
-    to: '/book',
-    Icon: PlaneTakeoff,
-    bg: 'bg-sky-50',
-    color: 'text-sky-600',
-    ring: 'hover:border-sky-300',
-  },
 ];
 
 export default function MarketplaceCategories() {
@@ -55,7 +44,7 @@ export default function MarketplaceCategories() {
       <p className="text-[11px] font-black uppercase tracking-wider text-brand-grey mb-2.5">
         Explore
       </p>
-      <div className="grid grid-cols-4 gap-2 sm:gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {CATEGORIES.map((cat, i) => (
           <motion.div
             key={cat.id}

@@ -6,12 +6,12 @@ const faqs = [
   {
     question: "What is Alabiq?",
     answer:
-      "Alabiq is a food delivery and airport transfer app for Riyadh. Order from partner restaurants or book a fixed-rate pick & drop ride, pay securely with STC Pay, and follow every trip on live GPS tracking.",
+      "Alabiq is a food delivery app for Riyadh. Order from verified partner restaurants, pay securely with STC Pay, and follow your rider on live GPS tracking until the food reaches your door.",
   },
   {
-    question: "Is the airport transfer rate fixed?",
+    question: "How far do you deliver?",
     answer:
-      "Yes. Airport pick & drop starts at a flat SAR 100 base plus a 3.75% service fee, with any long-distance surcharge and 15% VAT shown up front. The exact total is locked in before you confirm the booking — no hidden charges, ever.",
+      "We deliver within a 15 km radius of each partner restaurant. Keeping deliveries close means your food always arrives hot and fresh.",
   },
   {
     question: "Which districts in Riyadh do you cover?",
@@ -19,9 +19,14 @@ const faqs = [
       "We're currently active in Malaz, Sulamania, Olaya, and Batha, and constantly expanding to serve more areas soon.",
   },
   {
+    question: "How do I pay for my order?",
+    answer:
+      "Pay by STC Pay bank transfer and upload your receipt in the app. Our team verifies the payment before your order is dispatched — you'll see the full total, including 15% VAT, before you confirm.",
+  },
+  {
     question: "Can I track my order in real-time?",
     answer:
-      "Absolutely. Once your order or ride is confirmed, you can track your driver's exact location via live GPS integration inside the app.",
+      "Absolutely. Once your order is confirmed, you can track your rider's exact location via live GPS integration inside the app, from the kitchen to your doorstep.",
   },
 ];
 

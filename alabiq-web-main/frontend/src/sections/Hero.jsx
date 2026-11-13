@@ -1,17 +1,47 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  UtensilsCrossed,
+  MapPin,
+  Shield,
+  Clock,
+  BadgeCheck,
+  Flame,
+  Bike,
+} from "lucide-react";
 import PhoneMockup from "../components/PhoneMockup";
 import MarketplaceCategories from "./MarketplaceCategories";
 import MobileMarketplaceHome from "./MobileMarketplaceHome";
 
 // Value props, not vanity metrics — every claim here matches a real feature in
-// the backend (lib/fare.js flat airport base, SSE live tracking, STC Pay flow).
+// the backend (15 km delivery radius, SSE live tracking, STC Pay proof flow).
 const stats = [
-  { value: "Live GPS", label: "Real-time tracking" },
+  { value: "15 km", label: "Delivery radius" },
+  { value: "Live GPS", label: "Order tracking" },
   { value: "STC Pay", label: "Secure payments" },
   { value: "24/7", label: "Customer support" },
 ];
+
+const highlights = [
+  {
+    Icon: UtensilsCrossed,
+    title: "Real restaurant kitchens",
+    desc: "Menus come straight from verified partner restaurants — what you see is what they cook.",
+  },
+  {
+    Icon: MapPin,
+    title: "Tracked door to door",
+    desc: "Follow your rider on live GPS from the moment your order leaves the kitchen.",
+  },
+  {
+    Icon: Shield,
+    title: "Verified payments",
+    desc: "Pay by STC Pay transfer, upload your receipt, and we verify it before dispatch.",
+  },
+];
+
+const easeOut = [0.22, 1, 0.36, 1];
 
 // 2xl (1536px): phones and tablets — including iPad Pro landscape (~1366px) —
 // get the storefront. Laptops and desktops keep the marketing hero + phone mockup.
@@ -81,19 +111,21 @@ const Hero = () => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-orange opacity-60" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-orange" />
             </span>
-            Food delivery & airport rides in Riyadh
+            Now delivering food across Riyadh
           </motion.div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-brand-black leading-[1.05]">
-            Food to your door.{" "}
+            Craving something?{" "}
             <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-orange to-brand-red">
-              Rides to the airport.
+              It's on its way.
             </span>
           </h1>
 
           <p className="text-brand-grey text-base md:text-lg leading-relaxed max-w-lg">
-            Order from partner restaurants or book a fixed-rate airport pick
-            &amp; drop. Pay securely with STC Pay and track every trip live.
+            Alabiq brings Riyadh's best kitchens to your doorstep. Browse real
+            menus from verified partner restaurants, pay securely with STC Pay,
+            and watch your order arrive on live GPS — hot, fresh, and right on
+            time.
           </p>
 
           <form
@@ -127,7 +159,7 @@ const Hero = () => {
               type="submit"
               className="bg-brand-orange hover:bg-brand-orange/90 text-white font-bold text-sm px-8 py-3.5 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer shadow-md shadow-brand-orange/25 whitespace-nowrap"
             >
-              Search
+              Find Food
             </button>
           </form>
 
@@ -138,17 +170,35 @@ const Hero = () => {
               to="/services/food"
               className="bg-brand-orange hover:bg-brand-orange/90 text-white font-bold text-sm px-7 py-3.5 rounded-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-md shadow-brand-orange/20"
             >
-              Order Food
+              Order Food Now
             </Link>
-            <Link
-              to="/book"
+            <a
+              href="#how-it-works"
               className="text-brand-dark hover:text-brand-orange font-bold text-sm px-5 py-3.5 rounded-xl border border-brand-border hover:border-brand-orange/30 transition-colors"
             >
-              Book Airport Ride
-            </Link>
+              See How It Works
+            </a>
           </div>
 
-          <div className="flex flex-wrap gap-6 sm:gap-8 pt-2 border-t border-brand-border w-full max-w-xl">
+          <div className="grid sm:grid-cols-3 gap-4 w-full max-w-xl">
+            {highlights.map(({ Icon, title, desc }, i) => (
+              <motion.div
+                key={title}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.45 + i * 0.12, duration: 0.5, ease: easeOut }}
+                className="bg-white/70 backdrop-blur-sm border border-brand-border rounded-2xl p-4"
+              >
+                <span className="w-9 h-9 rounded-xl bg-brand-warm border border-brand-orange/15 flex items-center justify-center mb-3">
+                  <Icon className="w-4.5 h-4.5 text-brand-orange" strokeWidth={2.2} />
+                </span>
+                <p className="text-sm font-black text-brand-black leading-tight">{title}</p>
+                <p className="text-xs text-brand-grey font-medium mt-1.5 leading-relaxed">{desc}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-6 sm:gap-8 pt-4 border-t border-brand-border w-full max-w-xl">
             {stats.map((stat) => (
               <div key={stat.label}>
                 <p className="text-2xl font-black text-brand-black">{stat.value}</p>
@@ -167,7 +217,39 @@ const Hero = () => {
           className="relative w-full flex justify-center lg:justify-end order-1 lg:order-2 py-4 lg:py-8"
         >
           <PhoneMockup />
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.1, duration: 0.5 }}
+            className="absolute -bottom-2 left-1/2 -translate-x-1/2 lg:left-auto lg:right-6 lg:translate-x-0 z-30 flex items-center gap-2.5 bg-white border border-brand-border rounded-2xl px-4 py-3 shadow-xl"
+          >
+            <span className="w-9 h-9 rounded-xl bg-brand-orange/10 flex items-center justify-center">
+              <BadgeCheck className="w-5 h-5 text-brand-orange" strokeWidth={2.2} />
+            </span>
+            <div>
+              <p className="text-xs font-black text-brand-black leading-tight">Verified partners</p>
+              <p className="text-[10px] text-brand-grey mt-0.5">Every restaurant is vetted</p>
+            </div>
+          </motion.div>
         </motion.div>
+      </div>
+
+      <div className="absolute bottom-0 inset-x-0 pointer-events-none" aria-hidden="true">
+        <div className="max-w-7xl mx-auto px-6 md:px-16 lg:px-20 pb-5 flex items-center justify-center gap-8 text-[11px] font-bold uppercase tracking-widest text-brand-grey/70">
+          <span className="inline-flex items-center gap-1.5">
+            <Flame className="w-3.5 h-3.5 text-brand-orange" strokeWidth={2.2} />
+            Fresh from the kitchen
+          </span>
+          <span className="hidden sm:inline-flex items-center gap-1.5">
+            <Bike className="w-3.5 h-3.5 text-brand-orange" strokeWidth={2.2} />
+            Riders on standby
+          </span>
+          <span className="hidden md:inline-flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-brand-orange" strokeWidth={2.2} />
+            Open late, every day
+          </span>
+        </div>
       </div>
     </section>
   );

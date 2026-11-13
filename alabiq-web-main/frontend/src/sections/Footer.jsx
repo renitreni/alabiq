@@ -12,8 +12,7 @@ const legalLinks = [
 // route (/, /services) — see Navbar's menuLinks for the same reasoning.
 const exploreLinks = [
   { label: "Our Services", href: "/services" },
-  { label: "Food Delivery", href: "/food" },
-  { label: "Pick & Drop", href: "/book" },
+  { label: "Food Delivery", href: "/services/food" },
   { label: "How It Works", href: "/#how-it-works" },
 ];
 
@@ -85,13 +84,13 @@ const Footer = () => {
           </span>
         </Link>
         <p className="text-xs text-white/50 mt-3 leading-relaxed">
-          Food delivery and airport rides across Riyadh.
+          Food delivery across Riyadh — hot, fresh, and tracked live.
         </p>
 
         <div className="grid grid-cols-2 gap-2 mt-5">
           {[
-            { to: "/services/food", label: "Food" },
-            { to: "/book", label: "Ride" },
+            { to: "/services/food", label: "Order Food" },
+            { to: "/services/food?tab=deals", label: "Deals" },
           ].map((item) => (
             <Link
               key={item.to}
@@ -213,8 +212,8 @@ const Footer = () => {
             </Link>
 
             <p className="text-sm leading-relaxed max-w-xs text-white/50">
-              Order food and book airport transfers, all in one app with
-              real-time tracking across Riyadh.
+              Riyadh's best restaurants delivered to your door — with real-time
+              tracking on every order.
             </p>
 
             <div className="flex gap-2 mt-1">

@@ -3,10 +3,9 @@ import { motion } from "framer-motion";
 import {
   Clock,
   MapPin,
-  PlaneTakeoff,
+  Receipt,
   Shield,
   Smartphone,
-  Sparkles,
   UtensilsCrossed,
   Zap,
 } from "lucide-react";
@@ -22,12 +21,12 @@ const steps = [
   },
   {
     step: "02",
-    Icon: Sparkles,
-    title: "Order or book a ride",
-    desc: "Pick from partner restaurants for delivery, or book a fixed-rate airport pick & drop — both live in Riyadh.",
+    Icon: UtensilsCrossed,
+    title: "Pick your meal",
+    desc: "Browse real menus from verified partner restaurants across Riyadh and build your order in a few taps.",
     services: [
-      { Icon: UtensilsCrossed, label: "Food" },
-      { Icon: PlaneTakeoff, label: "Pick & Drop" },
+      { Icon: UtensilsCrossed, label: "Restaurants" },
+      { Icon: Receipt, label: "Deals & offers" },
     ],
     accent: "from-orange-400 to-brand-orange",
   },
@@ -35,7 +34,7 @@ const steps = [
     step: "03",
     Icon: Shield,
     title: "Pay with STC Pay & track live",
-    desc: "Transfer via STC Pay and upload your receipt — we verify it before dispatch. Then follow your driver on live GPS until it reaches your door.",
+    desc: "Transfer via STC Pay and upload your receipt — we verify it before dispatch. Then follow your rider on live GPS until the food reaches your door.",
     tags: ["Receipt upload", "Verified before dispatch", "Live GPS"],
     accent: "from-brand-red to-orange-500",
   },
@@ -92,7 +91,7 @@ const HowItWorks = () => {
             </h2>
             <p className="text-brand-grey text-sm md:text-base mt-4 font-medium leading-relaxed">
               No complicated menus or long forms. Your order is verified,
-              dispatched, and tracked from checkout to your door.
+              prepared, and tracked from the kitchen to your door.
             </p>
           </motion.div>
 

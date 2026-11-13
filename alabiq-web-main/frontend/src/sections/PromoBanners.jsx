@@ -6,15 +6,15 @@ const promos = [
   {
     src: "/promo/all-in-one-app.png",
     alt: "Alabiq All-in-One Delivery App",
-    title: "All-in-One Delivery App",
-    desc: "Food delivery and airport pick & drop, unified in one smart platform built for Riyadh.",
-    tags: ["Food Delivery", "Pick & Drop"],
+    title: "All-in-One Food Delivery App",
+    desc: "Riyadh's best restaurants, live tracking, and secure payments — unified in one smart platform.",
+    tags: ["Food Delivery", "Live Tracking"],
   },
   {
     src: "/promo/smarter-way-to-move.png",
-    alt: "Alabiq, ready for a smarter way to move",
-    title: "Smarter Way to Move",
-    desc: "Now live in Riyadh. Order food delivery or a fixed-rate airport ride from your phone today.",
+    alt: "Alabiq, ready for a smarter way to eat",
+    title: "Smarter Way to Eat",
+    desc: "Now live in Riyadh. Order from your favourite restaurants and get it delivered hot and fresh.",
     tags: ["Live in Riyadh"],
   },
 ];
@@ -63,8 +63,8 @@ const PromoBanners = () => {
             <span className="text-brand-orange">Alabiq</span>
           </h2>
           <p className="text-brand-grey text-base md:text-lg mt-4 leading-relaxed">
-            Food delivery and airport pick &amp; drop brought together in one
-            platform — now serving Riyadh.
+            Food delivery from Riyadh's favourite kitchens — ordered, paid,
+            and tracked in one app.
           </p>
         </motion.div>
 

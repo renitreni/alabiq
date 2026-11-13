@@ -24,8 +24,8 @@ const AboutUs = () => {
           <h2 className="text-4xl md:text-5xl font-black mb-6 text-brand-black">Empowering the <span className="text-brand-orange">Kingdom of Saudi Arabia's</span> Daily Rhythm.</h2>
           <p className="text-brand-grey text-lg leading-relaxed">
             <span className="text-brand-black text-lg font-bold italic leading-relaxed">Alabiq </span> 
-            was founded with a simple yet powerful vision: to bridge the gap between busy urban lifestyles and seamless access to essential services.
-            More than just an app, Alabiq is your trusted digital partner, connecting you effortlessly to food, delivery and transportation solutions whenever and wherever you need them.
+            was founded with a simple yet powerful vision: to bridge the gap between busy urban lifestyles and the food people love.
+            More than just an app, Alabiq is your trusted digital partner, connecting you effortlessly to Riyadh's best restaurants whenever and wherever hunger strikes.
           </p>
         </motion.div>
         
@@ -37,8 +37,8 @@ const AboutUs = () => {
         >
           <div className="text-brand-orange font-bold text-sm uppercase tracking-widest mb-4">Our Mission</div>
           <p className="italic text-xl text-brand-dark">
-            "Our mission is to empower everyone in the Kingdom of Saudi Arabia with fast, secure, and reliable pick-up, drop-off, and delivery services.
-            To ensure a seamless and hassle free experience where every transaction is completed with ease and confidence."
+            "Our mission is to empower everyone in the Kingdom of Saudi Arabia with fast, secure, and reliable food delivery.
+            To ensure a seamless and hassle free experience where every order arrives hot, fresh, and exactly as promised."
 
           </p>
         </motion.div>

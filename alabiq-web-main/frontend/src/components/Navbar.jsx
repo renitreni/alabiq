@@ -93,17 +93,6 @@ function AuthActions({ mobile = false, onNavigate }) {
                 </motion.span>
               )}
             </Link>
-            <Link to="/book" onClick={onNavigate}>
-              {mobile ? (
-                <span className="block text-center w-full font-black py-3.5 rounded-2xl text-sm text-brand-dark border border-brand-border cursor-pointer">
-                  Book a Ride
-                </span>
-              ) : (
-                <span className="inline-block whitespace-nowrap text-xs font-black px-4 py-3 rounded-full cursor-pointer text-brand-dark border border-brand-border hover:border-brand-orange/40 hover:text-brand-orange transition-colors">
-                  Book a Ride
-                </span>
-              )}
-            </Link>
           </>
         )}
 
