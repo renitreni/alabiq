@@ -106,6 +106,10 @@ services:
       OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-alabiq}
       OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       OBJECT_STORAGE_FORCE_PATH_STYLE: "true"
+      # Phase 6: Single-branch pilot — enable Partner API + Worker
+      PARTNER_API_ENABLED: "true"
+      WORKER_ENABLED: "true"
+      LEGACY_FOOD_MARKETPLACE_ENABLED: "true"
     depends_on:
       postgres:
         condition: service_healthy
