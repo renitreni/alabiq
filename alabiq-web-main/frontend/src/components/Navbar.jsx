@@ -284,16 +284,6 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-1 2xl:hidden">
-          {location.pathname === "/" && (
-            <Link
-              to="/shop"
-              title="Cart"
-              aria-label="Cart"
-              className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-brand-orange hover:bg-orange-50 transition-colors"
-            >
-              <ShoppingCart className="w-5 h-5" />
-            </Link>
-          )}
           <button
             onClick={() => setIsOpen(!isOpen)}
             aria-label="Toggle menu"

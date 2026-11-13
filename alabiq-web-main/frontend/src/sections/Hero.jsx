@@ -5,10 +5,12 @@ import PhoneMockup from "../components/PhoneMockup";
 import MarketplaceCategories from "./MarketplaceCategories";
 import MobileMarketplaceHome from "./MobileMarketplaceHome";
 
+// Value props, not vanity metrics — every claim here matches a real feature in
+// the backend (lib/fare.js flat airport base, SSE live tracking, STC Pay flow).
 const stats = [
-  { value: "500+", label: "Restaurants & stores" },
-  { value: "15 min", label: "Avg. delivery" },
-  { value: "50k+", label: "Orders delivered" },
+  { value: "Live GPS", label: "Real-time tracking" },
+  { value: "STC Pay", label: "Secure payments" },
+  { value: "24/7", label: "Customer support" },
 ];
 
 // 2xl (1536px): phones and tablets — including iPad Pro landscape (~1366px) —
@@ -79,20 +81,19 @@ const Hero = () => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-orange opacity-60" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-orange" />
             </span>
-            Your marketplace, delivered
+            Food delivery & airport rides in Riyadh
           </motion.div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-brand-black leading-[1.05]">
-            Shop food, groceries{" "}
+            Food to your door.{" "}
             <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-orange to-brand-red">
-              &amp; more
-            </span>{" "}
-            — delivered fast.
+              Rides to the airport.
+            </span>
           </h1>
 
           <p className="text-brand-grey text-base md:text-lg leading-relaxed max-w-lg">
-            Browse restaurants and stores, add to cart, and track every order live.
-            Food, essentials, and airport rides — all in one app.
+            Order from partner restaurants or book a fixed-rate airport pick
+            &amp; drop. Pay securely with STC Pay and track every trip live.
           </p>
 
           <form
@@ -117,8 +118,8 @@ const Hero = () => {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search restaurants, stores, or products..."
-                aria-label="Search restaurants, stores, or products"
+                placeholder="Search restaurants or dishes..."
+                aria-label="Search restaurants or dishes"
                 className="w-full bg-transparent text-brand-dark placeholder-brand-grey text-sm focus:outline-none"
               />
             </div>
@@ -137,13 +138,13 @@ const Hero = () => {
               to="/services/food"
               className="bg-brand-orange hover:bg-brand-orange/90 text-white font-bold text-sm px-7 py-3.5 rounded-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-md shadow-brand-orange/20"
             >
-              Start Shopping
+              Order Food
             </Link>
             <Link
               to="/book"
               className="text-brand-dark hover:text-brand-orange font-bold text-sm px-5 py-3.5 rounded-xl border border-brand-border hover:border-brand-orange/30 transition-colors"
             >
-              Book a ride
+              Book Airport Ride
             </Link>
           </div>
 

@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   UtensilsCrossed,
   MapPin,
-  ShoppingBag,
   Search,
   ShoppingCart,
   Plane,
@@ -14,11 +13,9 @@ import {
   Clock,
   Bike,
   UserCircle,
-  Gift,
   Check,
   Sparkles,
   Star,
-  Plus,
   ChevronDown,
   Signal,
   BatteryFull,
@@ -26,53 +23,15 @@ import {
 } from "lucide-react";
 import { restaurants, flashingRestaurants } from "../data/restaurants";
 
+// Shop screen intentionally absent: the Shop vertical is feature-flagged off
+// (SHOP_ENABLED), so the mockup only demos live surfaces — food and rides.
 const screens = [
   { id: "food", label: "Food", Icon: UtensilsCrossed },
   { id: "track", label: "Pick & Drop", Icon: MapPin },
-  { id: "shop", label: "Shop", Icon: ShoppingBag },
-];
-
-const shopPartners = [
-  {
-    id: "pinas",
-    name: "Pinas Supermarket",
-    shortName: "Pinas",
-    logo: "/brands/pinas-supermarket.png",
-    accent: "#1D5FBF",
-    tint: "#EAF1FE",
-  },
-  {
-    id: "al-wafa",
-    name: "Al Wafa Hypermarket",
-    shortName: "Al Wafa",
-    logo: "/brands/al-wafa-hypermarket.png",
-    accent: "#0B7A3E",
-    tint: "#E7F6EE",
-  },
-];
-
-const shopProducts = [
-  { name: "Jasmine Rice 25kg", price: "189", emoji: "🍚", store: "Pinas", tint: "#EAF1FE", image: "/products/jasmine-rice.jpg" },
-  { name: "Dried Mangoes", price: "28", emoji: "🥭", store: "Pinas", tint: "#EAF1FE", image: "/products/dried-mangoes.jpg" },
-  { name: "Banana Ketchup", price: "12", emoji: "🍅", store: "Pinas", tint: "#EAF1FE", image: "/products/banana-ketchup.jpg" },
-  { name: "Pancit Canton (10s)", price: "22", emoji: "🍜", store: "Pinas", tint: "#EAF1FE", image: "/products/pancit-canton.jpg" },
-  { name: "Coconut Milk", price: "9", emoji: "🥥", store: "Pinas", tint: "#EAF1FE", image: "/products/coconut-milk.jpg" },
-  { name: "3-in-1 Coffee", price: "18", emoji: "☕", store: "Pinas", tint: "#EAF1FE", image: "/products/instant-coffee.jpg" },
-  { name: "Calamansi Juice 1L", price: "15", emoji: "🍋", store: "Pinas", tint: "#EAF1FE", image: "/products/calamansi-juice.jpg" },
-  { name: "Ube Halaya Jar", price: "35", emoji: "🍠", store: "Pinas", tint: "#EAF1FE", image: "/products/ube-halaya.jpg" },
-  { name: "Fresh Ajwa Dates", price: "45", emoji: "🌴", store: "Al Wafa", tint: "#E7F6EE", image: "/products/al-wafa-dates.jpg" },
-  { name: "Basmati Rice 5kg", price: "55", emoji: "🍚", store: "Al Wafa", tint: "#E7F6EE", image: "/products/al-wafa-rice.jpg" },
-  { name: "Sunflower Oil 1.5L", price: "28", emoji: "🫒", store: "Al Wafa", tint: "#E7F6EE", image: "/products/al-wafa-oil.jpg" },
-  { name: "Fresh Laban 1L", price: "7", emoji: "🥛", store: "Al Wafa", tint: "#E7F6EE", image: "/products/al-wafa-laban.jpg" },
-  { name: "Arabic Coffee", price: "32", emoji: "☕", store: "Al Wafa", tint: "#E7F6EE", image: "/products/al-wafa-coffee.jpg" },
-  { name: "Mixed Nuts Tin", price: "60", emoji: "🥜", store: "Al Wafa", tint: "#E7F6EE", image: "/products/al-wafa-nuts.jpg" },
-  { name: "Fresh Pita Bread", price: "8", emoji: "🫓", store: "Al Wafa", tint: "#E7F6EE", image: "/products/al-wafa-pita.jpg" },
-  { name: "Vegetables Box", price: "38", emoji: "🥗", store: "Al Wafa", tint: "#E7F6EE", image: "/products/al-wafa-vegetables.jpg" },
 ];
 
 const categories = [
   { label: "Food", Icon: UtensilsCrossed, active: true },
-  { label: "Shop", Icon: ShoppingBag, active: false },
   { label: "Ride", Icon: Plane, active: false },
 ];
 
@@ -322,117 +281,9 @@ function TrackScreen() {
   );
 }
 
-function ShopScreen() {
-  const [activePartner, setActivePartner] = useState(shopPartners[0].id);
-  const partner = shopPartners.find((p) => p.id === activePartner) ?? shopPartners[0];
-  const visibleProducts = shopProducts.filter((p) => p.store === partner.shortName);
-
-  return (
-    <div className="flex flex-col h-full bg-brand-muted text-brand-dark overflow-hidden">
-      <div
-        className="relative h-28 mx-3 mt-1 rounded-2xl overflow-hidden shrink-0 shadow-sm flex items-center justify-center"
-        style={{ backgroundColor: partner.tint }}
-      >
-        <img
-          src={partner.logo}
-          alt={partner.name}
-          className="max-h-[55%] max-w-[55%] object-contain"
-        />
-        <div className="absolute inset-0 bg-linear-to-t from-brand-black/70 via-brand-black/20 to-transparent" />
-        <div className="absolute bottom-3 left-4">
-          <p className="text-xs font-bold flex items-center gap-1" style={{ color: partner.accent }}>
-            <ShoppingBag className="w-3.5 h-3.5" strokeWidth={2.25} />
-            {partner.name}
-          </p>
-          <p className="text-base font-black text-white">Partner store picks</p>
-        </div>
-      </div>
-
-      <div className="px-3 pt-3 pb-2">
-        <div className="flex items-center gap-2.5 bg-white border border-brand-border rounded-2xl px-4 py-3 shadow-sm">
-          <Search className="w-4 h-4 text-brand-grey shrink-0" strokeWidth={2} />
-          <span className="text-brand-grey text-sm">Search products...</span>
-        </div>
-      </div>
-
-      <div className="px-3 mb-3 flex gap-2 overflow-hidden">
-        {shopPartners.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => setActivePartner(p.id)}
-            className={`text-xs font-bold px-3.5 py-1.5 rounded-full whitespace-nowrap transition-colors ${
-              activePartner === p.id
-                ? "text-white shadow-md shadow-brand-orange/25"
-                : "text-brand-grey bg-white border border-brand-border"
-            }`}
-            style={
-              activePartner === p.id
-                ? { backgroundColor: p.accent }
-                : undefined
-            }
-          >
-            {p.shortName}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex-1 overflow-hidden px-3 pb-3">
-        <div className="grid grid-cols-2 gap-2.5">
-          {visibleProducts.map((p) => (
-            <div
-              key={p.name}
-              className="bg-white border border-brand-border rounded-2xl overflow-hidden shadow-sm"
-            >
-              <div className="w-full h-24 overflow-hidden bg-brand-surface">
-                {p.image ? (
-                  <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div
-                    className="w-full h-full flex items-center justify-center text-4xl"
-                    style={{
-                      background: `linear-gradient(145deg, ${p.tint} 0%, #ffffff 45%, ${p.tint} 100%)`,
-                    }}
-                  >
-                    {p.emoji}
-                  </div>
-                )}
-              </div>
-              <div className="p-2.5">
-                <p className="text-xs font-bold text-brand-black truncate">{p.name}</p>
-                <p className="text-[9px] text-brand-grey truncate">{p.store}</p>
-                <div className="flex items-center justify-between mt-1">
-                  <p className="text-sm text-brand-orange font-black">SAR {p.price}</p>
-                  <span className="w-7 h-7 rounded-lg bg-brand-warm border border-brand-orange/20 flex items-center justify-center">
-                    <Plus className="w-4 h-4 text-brand-orange" strokeWidth={2.5} />
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="mx-3 mb-3 bg-brand-warm border border-brand-orange/20 rounded-2xl p-3 flex items-center justify-between shrink-0">
-        <div>
-          <p className="text-xs font-black text-brand-black flex items-center gap-1.5">
-            <Gift className="w-4 h-4 text-brand-orange" strokeWidth={2.25} />
-            Smart Rewards
-          </p>
-          <p className="text-[10px] text-brand-grey">Earn on every purchase</p>
-        </div>
-        <span className="text-sm font-black text-brand-orange bg-white border border-brand-orange/20 px-3 py-1.5 rounded-xl">
-          +120 pts
-        </span>
-      </div>
-    </div>
-  );
-}
-
 const screenComponents = {
   food: FoodScreen,
   track: TrackScreen,
-  shop: ShopScreen,
 };
 
 const PhoneMockup = () => {
@@ -478,9 +329,9 @@ const PhoneMockup = () => {
           transition={{ delay: 0.7 }}
           className="absolute left-0 sm:-left-6 top-[30%] z-30 bg-white border border-brand-border rounded-2xl px-5 py-4 shadow-xl hidden md:block"
         >
-          <p className="text-xs text-brand-grey font-medium">Orders today</p>
-          <p className="text-3xl font-black text-brand-black mt-1">2,847</p>
-          <p className="text-[10px] text-brand-orange font-bold mt-1">↑ 12% vs yesterday</p>
+          <p className="text-xs text-brand-grey font-medium">Airport pick & drop</p>
+          <p className="text-3xl font-black text-brand-black mt-1">SAR 100</p>
+          <p className="text-[10px] text-brand-orange font-bold mt-1">Flat base rate</p>
         </motion.div>
 
         <motion.div
@@ -489,17 +340,14 @@ const PhoneMockup = () => {
           transition={{ delay: 0.9 }}
           className="absolute right-0 sm:-right-4 bottom-[28%] z-30 bg-brand-orange rounded-2xl px-5 py-4 shadow-2xl shadow-brand-orange/40 hidden md:block"
         >
-          <p className="text-white text-3xl font-black leading-none">4.9</p>
-          <div className="flex gap-0.5 mt-1">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className="w-3.5 h-3.5 text-white fill-white"
-                strokeWidth={0}
-              />
-            ))}
-          </div>
-          <p className="text-white/60 text-[10px] mt-1">50k+ reviews</p>
+          <p className="text-white text-3xl font-black leading-none flex items-center gap-2">
+            Live
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-60" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
+            </span>
+          </p>
+          <p className="text-white/60 text-[10px] mt-1.5">GPS tracking on every trip</p>
         </motion.div>
 
         <div

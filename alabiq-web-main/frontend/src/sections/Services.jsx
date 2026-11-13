@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { UtensilsCrossed, ShoppingBag, PlaneTakeoff, ArrowRight } from 'lucide-react';
+import { UtensilsCrossed, PlaneTakeoff, ArrowRight } from 'lucide-react';
 import LogoGrid from './Logo';
 
 const servicesData = [
@@ -12,15 +12,6 @@ const servicesData = [
     tag: "Popular",
     link: "/services/food",
     accent: "from-brand-orange to-brand-red",
-  },
-  {
-    id: 2,
-    Icon: ShoppingBag,
-    title: "E-Commerce Shop",
-    desc: "Browse trending products, daily essentials, and tech gadgets. Seamless shopping experience guaranteed.",
-    tag: "New",
-    link: "/services/shop",
-    accent: "from-orange-400 to-brand-orange",
   },
   {
     id: 3,
@@ -58,15 +49,16 @@ const Services = () => {
           className="text-center md:text-left mb-16 max-w-2xl"
         >
           <span className="text-brand-orange text-sm font-bold tracking-widest uppercase">
-            Marketplace
+            Our Services
           </span>
           <h2 className="text-3xl md:text-5xl font-black tracking-tight text-brand-black mt-2 leading-tight">
-            Shop food, groceries &amp; more — <br className="hidden md:block" />
-            <span className="text-brand-orange">delivered to your door.</span>
+            Food delivery &amp; airport transfers,{" "}
+            <br className="hidden md:block" />
+            <span className="text-brand-orange">one app for Riyadh.</span>
           </h2>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-5xl">
           {servicesData.map((service, index) => (
             <motion.a
               key={service.id}

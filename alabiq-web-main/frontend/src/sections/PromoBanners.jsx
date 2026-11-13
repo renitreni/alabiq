@@ -7,15 +7,15 @@ const promos = [
     src: "/promo/all-in-one-app.png",
     alt: "Alabiq All-in-One Delivery App",
     title: "All-in-One Delivery App",
-    desc: "Food delivery, e-commerce, and pick & drop, unified in one smart platform built for Riyadh.",
-    tags: ["Food Delivery", "E-Commerce", "Pick & Drop"],
+    desc: "Food delivery and airport pick & drop, unified in one smart platform built for Riyadh.",
+    tags: ["Food Delivery", "Pick & Drop"],
   },
   {
     src: "/promo/smarter-way-to-move.png",
     alt: "Alabiq, ready for a smarter way to move",
     title: "Smarter Way to Move",
-    desc: "Launching soon across KSA. Stay tuned for the full Alabiq experience.",
-    tags: ["Launching Soon"],
+    desc: "Now live in Riyadh. Order food delivery or a fixed-rate airport ride from your phone today.",
+    tags: ["Live in Riyadh"],
   },
 ];
 
@@ -56,15 +56,15 @@ const PromoBanners = () => {
         >
           <span className="inline-flex items-center gap-1.5 text-brand-orange text-sm font-bold tracking-widest uppercase">
             <Sparkles className="w-4 h-4" strokeWidth={2.5} />
-            Coming to KSA
+            Live in Riyadh
           </span>
           <h2 className="text-3xl md:text-5xl font-black text-brand-black tracking-tight mt-3 leading-tight">
             A first look at{" "}
             <span className="text-brand-orange">Alabiq</span>
           </h2>
           <p className="text-brand-grey text-base md:text-lg mt-4 leading-relaxed">
-            Explore what&apos;s launching in Riyadh. Food, shopping, and
-            transport brought together in one platform.
+            Food delivery and airport pick &amp; drop brought together in one
+            platform — now serving Riyadh.
           </p>
         </motion.div>
 

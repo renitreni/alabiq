@@ -5,7 +5,6 @@ import {
   MapPin,
   PlaneTakeoff,
   Shield,
-  ShoppingBag,
   Smartphone,
   Sparkles,
   UtensilsCrossed,
@@ -24,21 +23,20 @@ const steps = [
   {
     step: "02",
     Icon: Sparkles,
-    title: "Choose what you need",
-    desc: "Pick from food delivery, online shopping, or airport pick & drop, all in one place.",
+    title: "Order or book a ride",
+    desc: "Pick from partner restaurants for delivery, or book a fixed-rate airport pick & drop — both live in Riyadh.",
     services: [
       { Icon: UtensilsCrossed, label: "Food" },
-      { Icon: ShoppingBag, label: "Shop" },
-      { Icon: PlaneTakeoff, label: "Ride" },
+      { Icon: PlaneTakeoff, label: "Pick & Drop" },
     ],
     accent: "from-orange-400 to-brand-orange",
   },
   {
     step: "03",
-    Icon: MapPin,
-    title: "Track it live",
-    desc: "Follow your order on the map with real-time updates until it reaches your door.",
-    tags: ["Live GPS", "Instant alerts"],
+    Icon: Shield,
+    title: "Pay with STC Pay & track live",
+    desc: "Transfer via STC Pay and upload your receipt — we verify it before dispatch. Then follow your driver on live GPS until it reaches your door.",
+    tags: ["Receipt upload", "Verified before dispatch", "Live GPS"],
     accent: "from-brand-red to-orange-500",
   },
 ];
@@ -87,14 +85,14 @@ const HowItWorks = () => {
               How It Works
             </span>
             <h2 className="text-3xl md:text-5xl font-black tracking-tight text-brand-black mt-2 leading-tight">
-              Your daily essentials,{" "}
+              Order, pay, track —{" "}
               <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-orange to-brand-red">
                 three easy steps.
               </span>
             </h2>
             <p className="text-brand-grey text-sm md:text-base mt-4 font-medium leading-relaxed">
-              No complicated menus or long forms. Just open the app, place your
-              order, and watch it come to you.
+              No complicated menus or long forms. Your order is verified,
+              dispatched, and tracked from checkout to your door.
             </p>
           </motion.div>
 

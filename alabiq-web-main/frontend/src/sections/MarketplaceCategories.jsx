@@ -1,7 +1,11 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { UtensilsCrossed, ShoppingBag, Store, Percent } from 'lucide-react';
+import { UtensilsCrossed, Percent, Flame, PlaneTakeoff } from 'lucide-react';
 
+// Tiles map to live surfaces only: the food service tabs (restaurants / deals /
+// trending) and the airport pick & drop booking page. The groceries & shops
+// tabs were dropped — they render an empty state while the Shop vertical is
+// feature-flagged off (SHOP_ENABLED).
 const CATEGORIES = [
   {
     id: 'food',
@@ -14,26 +18,6 @@ const CATEGORIES = [
     ring: 'hover:border-brand-orange/30',
   },
   {
-    id: 'groceries',
-    label: 'Groceries',
-    hint: 'Essentials',
-    to: '/services/food?tab=groceries',
-    Icon: ShoppingBag,
-    bg: 'bg-emerald-50',
-    color: 'text-emerald-600',
-    ring: 'hover:border-emerald-300',
-  },
-  {
-    id: 'shops',
-    label: 'Shops',
-    hint: 'Retail',
-    to: '/services/food?tab=shops',
-    Icon: Store,
-    bg: 'bg-violet-50',
-    color: 'text-violet-600',
-    ring: 'hover:border-violet-300',
-  },
-  {
     id: 'deals',
     label: 'Deals',
     hint: 'Save more',
@@ -43,13 +27,33 @@ const CATEGORIES = [
     color: 'text-rose-600',
     ring: 'hover:border-rose-300',
   },
+  {
+    id: 'trending',
+    label: 'Trending',
+    hint: 'New & hot',
+    to: '/services/food?tab=trending',
+    Icon: Flame,
+    bg: 'bg-amber-50',
+    color: 'text-amber-600',
+    ring: 'hover:border-amber-300',
+  },
+  {
+    id: 'rides',
+    label: 'Rides',
+    hint: 'Airport',
+    to: '/book',
+    Icon: PlaneTakeoff,
+    bg: 'bg-sky-50',
+    color: 'text-sky-600',
+    ring: 'hover:border-sky-300',
+  },
 ];
 
 export default function MarketplaceCategories() {
   return (
     <div className="w-full max-w-xl">
       <p className="text-[11px] font-black uppercase tracking-wider text-brand-grey mb-2.5">
-        Shop by category
+        Explore
       </p>
       <div className="grid grid-cols-4 gap-2 sm:gap-3">
         {CATEGORIES.map((cat, i) => (

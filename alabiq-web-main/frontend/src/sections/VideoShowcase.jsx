@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { Play, Pause } from "lucide-react";
 
 const highlights = [
-  "Order food, shop, or book rides in one app",
+  "Order food or book airport rides in one app",
   "Real-time GPS tracking on every delivery",
-  "Secure payments and instant notifications",
+  "Secure STC Pay payments and instant notifications",
 ];
 
 const VideoShowcase = () => {

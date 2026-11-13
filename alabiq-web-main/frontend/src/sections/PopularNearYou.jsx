@@ -45,12 +45,12 @@ export default function PopularNearYou() {
       <div className="max-w-7xl mx-auto">
         <div className="flex items-end justify-between gap-4 mb-6">
           <div>
-            <p className="text-brand-orange text-xs font-bold tracking-widest uppercase">Marketplace</p>
+            <p className="text-brand-orange text-xs font-bold tracking-widest uppercase">Food Delivery</p>
             <h2 className="text-2xl sm:text-3xl font-black text-brand-black tracking-tight mt-1">
               Popular near you
             </h2>
             <p className="text-sm text-brand-grey font-medium mt-1.5 max-w-lg">
-              Browse partner restaurants and stores with live prices, delivery fees, and one-tap ordering.
+              Browse partner restaurants with live prices, delivery fees, and one-tap ordering.
             </p>
           </div>
           <div className="hidden sm:flex items-center gap-2 shrink-0">
@@ -111,7 +111,7 @@ export default function PopularNearYou() {
             to="/services/food"
             className="inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-orange/90 text-white font-black text-sm px-6 py-3 rounded-xl shadow-md shadow-brand-orange/20 transition-colors"
           >
-            Browse marketplace
+            Browse restaurants
             <ArrowRight className="w-4 h-4" />
           </Link>
           {!loading && partners.length > 0 && (

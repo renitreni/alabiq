@@ -6,12 +6,12 @@ const faqs = [
   {
     question: "What is Alabiq?",
     answer:
-      "Alabiq is an all-in-one app for Riyadh. Order food from local restaurants, shop everyday essentials, send packages, and book airport pick & drop rides, all with real-time tracking and Smart Rewards.",
+      "Alabiq is a food delivery and airport transfer app for Riyadh. Order from partner restaurants or book a fixed-rate pick & drop ride, pay securely with STC Pay, and follow every trip on live GPS tracking.",
   },
   {
     question: "Is the airport transfer rate fixed?",
     answer:
-      "Yes, our rates are fully transparent. Whether you're arriving or departing, prices range from 80 to 100 SR depending on the terminal, with no hidden charges, ever.",
+      "Yes. Airport pick & drop starts at a flat SAR 100 base plus a 3.75% service fee, with any long-distance surcharge and 15% VAT shown up front. The exact total is locked in before you confirm the booking — no hidden charges, ever.",
   },
   {
     question: "Which districts in Riyadh do you cover?",
