@@ -239,7 +239,7 @@ async function processJobs() {
 async function runWebhookProcessor() {
   if (shuttingDown) return;
 
-  const { partnerRepository } = require('./repositories/partnerRepository');
+  const partnerRepository = require('./repositories/partnerRepository');
 
   try {
     // Get pending webhook deliveries

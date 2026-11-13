@@ -51,6 +51,7 @@
     "nodemailer": "^10.1.1",
     "pg": "^8.23.1",
     "pg-copy-streams": "^6.0.6",
+    "redis": "^5.8.2",
     "web-push": "^3.6.7"
   }
 }
