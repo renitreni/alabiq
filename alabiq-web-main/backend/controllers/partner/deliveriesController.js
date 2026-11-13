@@ -666,6 +666,7 @@ function buildDeliveryResponse(delivery) {
     } : null,
     cancellation_reason: delivery.reject_reason || null,
   };
+}
 
 // --- Credentials --------------------------------------------------------------
 
