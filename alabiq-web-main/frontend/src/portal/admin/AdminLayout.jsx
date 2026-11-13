@@ -227,11 +227,11 @@ function SidebarBrand({ expanded = false }) {
       }`}
     >
       <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-white/15 transition-colors">
-        <img src="/mappia-new-logo.png" alt="" className="w-7 h-7 object-contain" />
+        <img src="/alabiq-icon.png" alt="" className="w-7 h-7 object-contain" />
       </div>
       <div className={`min-w-0 ${expanded ? 'block' : 'hidden lg:block'}`}>
         <div className="font-black text-white text-sm tracking-tight leading-none">
-          Smart <span className="text-brand-orange">Mappia</span>
+          ALA<span className="text-brand-orange">BIQ</span>
         </div>
         <div className="text-[10px] font-semibold text-white/40 uppercase tracking-[0.14em] mt-1">
           Control center

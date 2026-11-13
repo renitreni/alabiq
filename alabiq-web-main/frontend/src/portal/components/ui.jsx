@@ -105,9 +105,9 @@ export function PortalShell({ title, subtitle, right, onBack, children, wide = f
               </button>
             )}
             <Link to="/" className="flex items-center gap-2">
-              <img src="/mappia-new-logo.png" alt="Alabiq" className="w-9 h-9 object-contain" />
+              <img src="/alabiq-icon.png" alt="Alabiq" className="w-9 h-9 object-contain" />
               <span className="font-black tracking-tight text-brand-black hidden sm:block">
-                Smart <span className="text-brand-orange">Mappia</span>
+                ALA<span className="text-brand-orange">BIQ</span>
               </span>
             </Link>
           </div>

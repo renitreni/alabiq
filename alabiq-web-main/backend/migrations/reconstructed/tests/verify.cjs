@@ -5,7 +5,7 @@ const {readFileSync,readdirSync}=require('node:fs');
 const {join}=require('node:path');
 const {randomUUID}=require('node:crypto');
 const assert=require('node:assert/strict');
-const container='smartmappia-schema-'+randomUUID().slice(0,8);
+const container='alabiq-schema-'+randomUUID().slice(0,8);
 const root=join(__dirname,'..');
 let checks=0;
 function docker(args,options={}){return execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe'],...options});}
@@ -24,7 +24,7 @@ function checkout(o=order(),lines=[line()]){return 'set role service_role; selec
 function cartLine(vid=null){sql("insert into shop_cart_items(cart_id,product_id,variant_id,quantity,unit_price) values('"+cart+"','"+product+"',"+(vid?"'"+vid+"'":'null')+",2,10);");}
 (async()=>{
 try{
-  docker(['run','-d','--name',container,'--label','codex.task=smartmappia-migration-test','--tmpfs','/var/lib/postgresql/data','-e','POSTGRES_HOST_AUTH_METHOD=trust',process.env.PG_TEST_IMAGE||'postgres:16-alpine']);
+  docker(['run','-d','--name',container,'--label','codex.task=alabiq-migration-test','--tmpfs','/var/lib/postgresql/data','-e','POSTGRES_HOST_AUTH_METHOD=trust',process.env.PG_TEST_IMAGE||'postgres:16-alpine']);
   let ready=false;
   for(let i=0;i<60;i++){try{docker(['exec',container,'pg_isready','-U','postgres']);ready=true;break;}catch{await new Promise(r=>setTimeout(r,250));}}
   assert(ready,'PostgreSQL ready');

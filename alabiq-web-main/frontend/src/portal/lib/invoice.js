@@ -163,7 +163,7 @@ function invoiceHtml({
         <div>
           <div style="display:flex;align-items:center;gap:10px;">
             ${LOGO_SVG}
-            <div style="font-size:26px;font-weight:800;color:${DARK};line-height:1;">Smart <span style="color:${ORANGE};">Mappia</span></div>
+            <div style="font-size:26px;font-weight:800;color:${DARK};line-height:1;">ALA<span style="color:${ORANGE};">BIQ</span></div>
           </div>
           <div style="font-size:11px;color:${GREY};margin-top:10px;line-height:1.6;">
             ${esc(COMPANY.websiteDisplay)}<br>${esc(COMPANY.email)} · ${esc(COMPANY.phoneDisplay)}<br>${esc(COMPANY.address.full)}

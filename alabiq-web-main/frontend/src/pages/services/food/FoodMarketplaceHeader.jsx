@@ -106,7 +106,7 @@ export default function FoodMarketplaceHeader({
         <div className="flex flex-wrap lg:flex-nowrap items-center gap-3 lg:gap-5 py-3">
           <Link to="/" className="flex items-center gap-2.5 shrink-0" aria-label="Back to Alabiq home" title="Back to homepage">
             <img
-              src="/mappia-icon-transparent.png"
+              src="/alabiq-icon.png"
               alt=""
               aria-hidden="true"
               className="w-10 h-10 object-contain"

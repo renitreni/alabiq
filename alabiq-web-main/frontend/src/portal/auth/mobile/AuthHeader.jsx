@@ -16,7 +16,7 @@ export default function AuthHeader({ onBack, showBack = true }) {
         <span />
       )}
 
-      <img className="auth-header__logo" src="/mappia-new-logo.png" alt="Alabiq" />
+      <img className="auth-header__logo" src="/alabiq-icon.png" alt="Alabiq" />
 
       <span />
     </div>

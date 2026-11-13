@@ -227,14 +227,14 @@ const Navbar = () => {
             className="w-10 h-10 shrink-0 flex items-center justify-center"
           >
             <img
-              src="/mappia-icon-transparent.png"
+              src="/alabiq-icon.png"
               alt=""
               aria-hidden="true"
               className="w-full h-full object-contain"
             />
           </motion.div>
           <span className="text-lg font-black tracking-tight whitespace-nowrap text-brand-black">
-            Smart <span className="text-brand-orange">Mappia</span>
+            ALA<span className="text-brand-orange">BIQ</span>
           </span>
         </Link>
 

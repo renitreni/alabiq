@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>Smart Mappia</string>
+        <string>Alabiq</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -46,11 +46,11 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Smart Mappia uses your location to set your pickup point, match you with nearby drivers, and show live delivery tracking.</string>
+	<string>Alabiq uses your location to set your pickup point, match you with nearby drivers, and show live delivery tracking.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Smart Mappia needs camera access so you can photograph your ID and vehicle documents for driver verification, and payment receipts at checkout.</string>
+	<string>Alabiq needs camera access so you can photograph your ID and vehicle documents for driver verification, and payment receipts at checkout.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Smart Mappia needs photo access so you can upload your ID, vehicle documents and payment receipts from your photo library.</string>
+	<string>Alabiq needs photo access so you can upload your ID, vehicle documents and payment receipts from your photo library.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>

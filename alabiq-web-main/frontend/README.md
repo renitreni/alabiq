@@ -281,9 +281,9 @@ plugin paths.
 
 ### App icons and splash screens
 
-The committed source assets live in `assets/`. They contain the Alabiq mark derived from
-`public/mappia-new-logo.png` on the brand-orange `#FF7E21` background. To regenerate every tracked
-iOS and Android icon and splash density:
+The committed source assets live in `assets/`. They contain the official ALABIQ artwork
+(`main-logo.png`, rider mark + ALABIQ wordmark) prepared in light and dark variants. To
+regenerate every tracked iOS and Android icon and splash density:
 
 ```bash
 npm run mobile:assets

@@ -658,9 +658,9 @@ export default function SignupPage() {
 
         <div className="relative z-10 flex flex-col justify-between p-10 xl:p-14 w-full">
           <Link to="/" className="flex items-center gap-3 w-fit">
-            <img src="/mappia-new-logo.png" alt="Alabiq" className="w-12 h-12 object-contain" />
+            <img src="/alabiq-icon.png" alt="Alabiq" className="w-12 h-12 object-contain" />
             <span className="text-xl font-black tracking-tight text-brand-black">
-              Smart <span className="text-brand-orange">Mappia</span>
+              ALA<span className="text-brand-orange">BIQ</span>
             </span>
           </Link>
 
@@ -734,9 +734,9 @@ export default function SignupPage() {
           </button>
 
           <Link to="/" className="flex items-center gap-2 lg:hidden">
-            <img src="/mappia-new-logo.png" alt="Alabiq" className="w-9 h-9 object-contain" />
+            <img src="/alabiq-icon.png" alt="Alabiq" className="w-9 h-9 object-contain" />
             <span className="font-black tracking-tight text-brand-black text-sm">
-              Smart <span className="text-brand-orange">Mappia</span>
+              ALA<span className="text-brand-orange">BIQ</span>
             </span>
           </Link>
         </div>

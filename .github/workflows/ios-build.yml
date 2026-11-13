@@ -88,12 +88,12 @@ jobs:
           test -n "$app_path"
           ditto -c -k --sequesterRsrc --keepParent \
             "$app_path" \
-            "$RUNNER_TEMP/SmartMappia-iOS-Simulator.zip"
+            "$RUNNER_TEMP/Alabiq-iOS-Simulator.zip"
 
       - name: Upload simulator app
         uses: actions/upload-artifact@v4
         with:
-          name: SmartMappia-iOS-Simulator-${{ github.sha }}
-          path: ${{ runner.temp }}/SmartMappia-iOS-Simulator.zip
+          name: Alabiq-iOS-Simulator-${{ github.sha }}
+          path: ${{ runner.temp }}/Alabiq-iOS-Simulator.zip
           if-no-files-found: error
           retention-days: 14

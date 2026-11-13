@@ -132,12 +132,12 @@ if (Capacitor.isNativePlatform()) {
             <motion.img
               whileHover={{ scale: 1.08, rotate: -4 }}
               transition={{ type: 'spring', stiffness: 320, damping: 14 }}
-              src="/mappia-new-logo.png"
+              src="/alabiq-icon.png"
               alt="Alabiq"
               className="w-12 h-12 object-contain"
             />
             <span className="text-xl font-black tracking-tight text-brand-black">
-              Smart <span className="text-brand-orange">Mappia</span>
+              ALA<span className="text-brand-orange">BIQ</span>
             </span>
           </Link>
 
@@ -206,9 +206,9 @@ if (Capacitor.isNativePlatform()) {
           </button>
 
           <Link to="/" className="flex items-center gap-2 lg:hidden">
-            <img src="/mappia-new-logo.png" alt="Alabiq" className="w-9 h-9 object-contain" />
+            <img src="/alabiq-icon.png" alt="Alabiq" className="w-9 h-9 object-contain" />
             <span className="font-black tracking-tight text-brand-black text-sm">
-              Smart <span className="text-brand-orange">Mappia</span>
+              ALA<span className="text-brand-orange">BIQ</span>
             </span>
           </Link>
         </div>

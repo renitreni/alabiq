@@ -1,4 +1,4 @@
-# Add these directives to the HTTPS `server` block for api.smartmappia.com.
+# Add these directives to the HTTPS `server` block for api.alabiq.com.
 # Keep the existing Certbot certificate/listen directives unchanged.
 
 # API-owned uploads allow at most 10 MB. Nginx defaults to 1 MB, so leave

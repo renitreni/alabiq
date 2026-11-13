@@ -80,9 +80,9 @@ const Footer = () => {
 
       <div className="2xl:hidden relative z-10 px-5 pt-8 pb-7">
         <Link to="/" className="flex items-center gap-2.5 w-fit">
-          <img src="/mappia-new-logo.png" alt="" className="w-9 h-9 object-contain" />
+          <img src="/alabiq-icon.png" alt="" className="w-9 h-9 object-contain" />
           <span className="text-base font-black tracking-tight">
-            Smart <span className="text-brand-orange">Mappia</span>
+            ALA<span className="text-brand-orange">BIQ</span>
           </span>
         </Link>
         <p className="text-xs text-white/50 mt-3 leading-relaxed">
@@ -201,15 +201,15 @@ const Footer = () => {
               <div className="relative">
                 <div className="absolute inset-0 rounded-full bg-linear-to-br from-brand-orange to-brand-red blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
                 <img
-                  src="/mappia-new-logo.png"
+                  src="/alabiq-icon.png"
                   alt="Alabiq Logo"
                   className="relative w-12 h-12 object-contain"
                 />
               </div>
               <span className="text-lg font-black tracking-tight text-white">
-                Smart{" "}
+                ALA{" "}
                 <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-orange to-brand-red">
-                  Mappia
+                  BIQ
                 </span>
               </span>
             </Link>
