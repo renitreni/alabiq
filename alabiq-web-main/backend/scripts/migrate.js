@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config(); // load .env BEFORE anything reads process.env
+
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');

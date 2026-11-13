@@ -8,6 +8,7 @@ const { surchargeFor, exceedsMaxRadius, driverShareOf } = require('../../lib/del
 const { getMaxDistanceKm } = require('../../lib/settings');
 const { merchantOpenState } = require('../../lib/storeHours');
 const partnerRepository = require('../../repositories/partnerRepository');
+const { validatePartnerItems } = require('../../lib/partnerValidation');
 const { logAudit } = require('../../lib/audit');
 const crypto = require('crypto');
 
@@ -142,6 +143,7 @@ async function createQuote(req, res) {
       pricingVersion: 'v1',
       requestHash,
       expiresAt,
+      distanceKm: Math.round(distance * 100) / 100, // NEW: persist quoted distance (2dp)
     });
 
     return res.status(201).json({
@@ -159,80 +161,90 @@ async function createQuote(req, res) {
 
 // POST /deliveries
 async function createDelivery(req, res) {
+  const {
+    external_order_id,
+    quote_id,
+    customer,
+    dropoff,
+    items,
+    merchandise_total,
+    external_payment,
+    preparation_status,
+  } = req.body;
+  const merchantId = req.partnerCredential.merchantId;
+  const credentialId = req.partnerCredential.id;
+  const idempotencyKey = req.headers['idempotency-key'];
+  const requestId = req.headers['x-request-id'] || crypto.randomUUID();
+
+  if (!idempotencyKey) {
+    return res.status(400).json({ error: { code: 'invalid_request', message: 'Idempotency-Key header is required', request_id: requestId } });
+  }
+
+  // Check idempotency
+  const requestHash = partnerRepository.hashRequest(req.body);
+  const existing = await partnerRepository.getIdempotencyKey(credentialId, 'create', idempotencyKey);
+  if (existing) {
+    if (existing.request_hash !== requestHash) {
+      return res.status(409).json({ error: { code: 'idempotency_conflict', message: 'Idempotency key reused with different request body', request_id: requestId } });
+    }
+    if (existing.state === 'completed') {
+      // Replay stored response
+      const response = partnerRepository.decryptResponse(existing.response_body_encrypted);
+      return res.set('Idempotent-Replayed', 'true').status(existing.http_status).json(response);
+    }
+    if (existing.state === 'in_progress') {
+      return res.status(409).json({ error: { code: 'request_in_progress', message: 'Request with this idempotency key is still being processed', request_id: requestId } });
+    }
+    // existing.state === 'failed_retryable' - allow retry by falling through
+  }
+
+  // Validate external_payment.status against allowlist (trust boundary)
+  // why: partner input must not control internal payment_status; we map known
+  // values and reject the rest to avoid silent data corruption.
+  const allowedPaymentStatus = new Set(['paid', 'pending', 'failed', 'refunded']);
+  if (!external_payment || !external_payment.status || !allowedPaymentStatus.has(external_payment.status)) {
+    return res.status(422).json({ error: { code: 'invalid_external_payment_status', message: 'external_payment.status must be one of: paid, pending, failed, refunded', request_id: requestId } });
+  }
+
+  // Validate items against merchandise_total before touching the idempotency
+  // record or the database — a rejected request must not burn the key.
+  const itemsError = validatePartnerItems(items, merchandise_total);
+  if (itemsError) {
+    return res.status(422).json({ error: { code: itemsError.code, message: itemsError.message, request_id: requestId } });
+  }
+
+  // Create in-progress idempotency record (or reset from failed_retryable)
+  await partnerRepository.upsertIdempotencyKey({
+    credentialId,
+    operation: 'create',
+    key: idempotencyKey,
+    requestHash,
+    state: 'in_progress',
+    expiresAt: generateIdempotencyExpiry(),
+  });
+
   try {
-    const {
-      external_order_id,
-      quote_id,
-      customer,
-      dropoff,
-      items,
-      merchandise_total,
-      external_payment,
-      preparation_status,
-    } = req.body;
-    const merchantId = req.partnerCredential.merchantId;
-    const credentialId = req.partnerCredential.id;
-    const idempotencyKey = req.headers['idempotency-key'];
-    const requestId = req.headers['x-request-id'] || crypto.randomUUID();
-
-    if (!idempotencyKey) {
-      return res.status(400).json({ error: { code: 'invalid_request', message: 'Idempotency-Key header is required', request_id: requestId } });
-    }
-
-    // Check idempotency
-    const requestHash = partnerRepository.hashRequest(req.body);
-    const existing = await partnerRepository.getIdempotencyKey(credentialId, 'create', idempotencyKey);
-    if (existing) {
-      if (existing.request_hash !== requestHash) {
-        return res.status(409).json({ error: { code: 'idempotency_conflict', message: 'Idempotency key reused with different request body', request_id: requestId } });
-      }
-      if (existing.state === 'completed') {
-        // Replay stored response
-        const response = partnerRepository.decryptResponse(existing.response_body_encrypted);
-        return res.set('Idempotent-Replayed', 'true').status(existing.http_status).json(response);
-      }
-      if (existing.state === 'in_progress') {
-        return res.status(409).json({ error: { code: 'request_in_progress', message: 'Request with this idempotency key is still being processed', request_id: requestId } });
-      }
-    }
-
-    // Create in-progress idempotency record
-    await partnerRepository.upsertIdempotencyKey({
-      credentialId,
-      operation: 'create',
-      key: idempotencyKey,
-      requestHash,
-      state: 'in_progress',
-      expiresAt: generateIdempotencyExpiry(),
-    });
-
     // Validate quote
     const quote = await partnerRepository.getValidQuote(merchantId, external_order_id, requestHash);
     if (!quote) {
-      await partnerRepository.upsertIdempotencyKey({
-        credentialId, operation: 'create', key: idempotencyKey, requestHash,
-        state: 'failed_retryable', httpStatus: 422,
-        responseBody: { error: { code: 'quote_expired', message: 'Quote expired, not found, or does not match request', request_id: requestId } },
-        expiresAt: generateIdempotencyExpiry(),
-      });
-      return res.status(422).json({ error: { code: 'quote_expired', message: 'Quote expired, not found, or does not match request', request_id: requestId } });
+      throwObject(422, 'quote_expired', 'Quote expired, not found, or does not match request', requestId);
     }
 
     // Validate merchant status again
     const { loadMerchantById } = require('../../lib/merchantOwner');
     const merchant = await loadMerchantById(merchantId);
     if (!merchant || merchant.status === 'suspended' || !merchant.accepting_orders) {
-      return res.status(403).json({ error: { code: 'restaurant_suspended', message: 'Restaurant is suspended or not accepting orders', request_id: requestId } });
+      throwObject(403, 'restaurant_suspended', 'Restaurant is suspended or not accepting orders', requestId);
     }
 
     // Validate drop-off matches quote
     if (Math.abs(dropoff.lat - quote.dropoff_lat) > 0.0001 || Math.abs(dropoff.lng - quote.dropoff_lng) > 0.0001) {
-      return res.status(422).json({ error: { code: 'quote_mismatch', message: 'Drop-off location does not match quote', request_id: requestId } });
+      throwObject(422, 'quote_mismatch', 'Drop-off location does not match quote', requestId);
     }
 
     // Validate preparation_status
     if (preparation_status !== 'accepted') {
-      return res.status(422).json({ error: { code: 'invalid_request', message: 'preparation_status must be "accepted"', request_id: requestId } });
+      throwObject(422, 'invalid_request', 'preparation_status must be "accepted"', requestId);
     }
 
     // Generate tracking token
@@ -241,14 +253,19 @@ async function createDelivery(req, res) {
     const trackingTokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
     // Compute order totals (using food pricing logic for consistency)
-    const subtotal = merchandise_total.amount_minor / 100; // convert to SAR for foodMoney
+    // why: VAT is charged on subtotal ONLY (delivery fee outside taxable base), matching food orders
+    const subtotal = merchandise_total.amount_minor / 100; // convert to SAR
     // Use the quote's delivery fee
     const baseDeliveryFee = quote.delivery_fee_minor / 100;
     const { vatRate, vatAmount } = require('../../lib/vat').vatFor(subtotal);
     const total = subtotal + baseDeliveryFee + vatAmount;
 
     // Driver share
-    const { driverFee } = driverShareOf(quote.delivery_fee_minor);
+    const { driverFee, driverFeeRate } = driverShareOf(quote.delivery_fee_minor);
+
+    // Get distance from quote (computed during quote validation)
+    // why: persist quoted distance for accurate records and driver pay
+    const distanceKm = quote.distance_km || null;
 
     // Create order + delivery + dispatch job in transaction
     const order = await partnerRepository.createPartnerOrder({
@@ -269,19 +286,22 @@ async function createDelivery(req, res) {
       preparationStatus: preparation_status,
       deliveryFeeMinor: quote.delivery_fee_minor,
       driverFeeMinor: driverFee,
+      driverFeeRate,
       vatRate,
       vatAmountMinor: Math.round(vatAmount * 100),
       totalMinor: Math.round(total * 100),
       trackingTokenHash,
       trackingTokenExpiresAt,
+      distanceKm, // quoted distance, snapshotted on the order row
     });
 
-    // Consume the quote
-    await partnerRepository.consumeQuote(quote.id, order.id);
+    // The quote is consumed INSIDE createPartnerOrder's transaction — if the
+    // compare-and-swap lost the race, the whole order rolls back here with
+    // code QUOTE_ALREADY_CONSUMED (mapped to 409 in the catch below).
 
     // Store completed idempotency response
     const responseBody = {
-      delivery_id: order.id, // This is the order_id, we need delivery_id
+      delivery_id: order.id,
       order_id: order.id,
       external_order_id: external_order_id,
       status: 'searching',
@@ -313,9 +333,45 @@ async function createDelivery(req, res) {
 
     return res.set('Idempotent-Replayed', 'false').status(201).json(responseBody);
   } catch (err) {
+    // Handle known error types with proper idempotency transitions.
+    // KNOWN_ERRORS: repository thrown errors that are client-correctable and
+    // must surface as 4xx (not 500) — quote races roll back the transaction.
+    const KNOWN_ERRORS = {
+      QUOTE_ALREADY_CONSUMED: [409, 'quote_already_consumed', 'Quote has already been used to create an order'],
+      ITEM_TOTALS_MISMATCH: [422, 'item_totals_mismatch', 'Items do not add up to merchandise_total'],
+    };
+    const isThrowObject = err && err._throwObject === true;
+    const known = err && KNOWN_ERRORS[err.code];
+    const status = isThrowObject ? err.status : (err.code === '23505' ? 409 : known ? known[0] : 500);
+    const code = isThrowObject ? err.code : (err.code === '23505' ? 'duplicate_external_order_id' : known ? known[1] : 'service_unavailable');
+    const message = isThrowObject ? err.message : (err.code === '23505' ? 'An order with this external_order_id already exists' : known ? known[2] : 'Unexpected server error');
+
+    // Transition idempotency key to failed_retryable with error response
+    const errorResponse = { error: { code, message, request_id: requestId } };
+    await partnerRepository.upsertIdempotencyKey({
+      credentialId,
+      operation: 'create',
+      key: idempotencyKey,
+      requestHash,
+      state: 'failed_retryable',
+      httpStatus: status,
+      responseBody: errorResponse,
+      expiresAt: generateIdempotencyExpiry(),
+    });
+
     console.error('createDelivery error:', err);
-    return res.status(500).json({ error: { code: 'service_unavailable', message: 'Unexpected server error', request_id: req.requestId } });
+    return res.status(status).json(errorResponse);
   }
+}
+
+// Helper to throw structured errors that bypass the generic catch handler
+function throwObject(status, code, message, requestId) {
+  const err = new Error(message);
+  err._throwObject = true;
+  err.status = status;
+  err.code = code;
+  err.requestId = requestId;
+  throw err;
 }
 
 // GET /deliveries/:id

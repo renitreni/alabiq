@@ -80,11 +80,12 @@ async function createQuote({
   pricingVersion,
   requestHash,
   expiresAt,
+  distanceKm, // NEW: merchant -> dropoff distance
 }) {
   const { rows } = await database.query(
     `INSERT INTO public.delivery_quotes(merchant_id,external_order_id,pickup_lat,pickup_lng,dropoff_lat,dropoff_lng,
-       dropoff_address,dropoff_instructions,delivery_fee_minor,currency,pricing_version,request_hash,expires_at)
-     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+       dropoff_address,dropoff_instructions,delivery_fee_minor,currency,pricing_version,request_hash,expires_at,distance_km)
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
      ON CONFLICT (merchant_id,external_order_id) WHERE consumed_at IS NULL
      DO UPDATE SET
        dropoff_lat=EXCLUDED.dropoff_lat,
@@ -95,11 +96,12 @@ async function createQuote({
        currency=EXCLUDED.currency,
        pricing_version=EXCLUDED.pricing_version,
        request_hash=EXCLUDED.request_hash,
-       expires_at=EXCLUDED.expires_at
+       expires_at=EXCLUDED.expires_at,
+       distance_km=EXCLUDED.distance_km
      RETURNING id,merchant_id,external_order_id,pickup_lat,pickup_lng,dropoff_lat,dropoff_lng,
-       dropoff_address,dropoff_instructions,delivery_fee_minor,currency,pricing_version,request_hash,expires_at,consumed_at,consumed_by_order_id`,
+       dropoff_address,dropoff_instructions,delivery_fee_minor,currency,pricing_version,request_hash,expires_at,consumed_at,consumed_by_order_id,distance_km`,
     [merchantId, externalOrderId, pickupLat, pickupLng, dropoffLat, dropoffLng,
-     dropoffAddress, dropoffInstructions, deliveryFeeMinor, currency, pricingVersion, requestHash, expiresAt]
+     dropoffAddress, dropoffInstructions, deliveryFeeMinor, currency, pricingVersion, requestHash, expiresAt, distanceKm]
   );
   return rows[0];
 }
@@ -107,7 +109,7 @@ async function createQuote({
 async function getValidQuote(merchantId, externalOrderId, requestHash) {
   const { rows } = await database.query(
     `SELECT id,merchant_id,external_order_id,pickup_lat,pickup_lng,dropoff_lat,dropoff_lng,
-       dropoff_address,dropoff_instructions,delivery_fee_minor,currency,pricing_version,request_hash,expires_at,consumed_at,consumed_by_order_id
+       dropoff_address,dropoff_instructions,delivery_fee_minor,currency,pricing_version,request_hash,expires_at,consumed_at,consumed_by_order_id,distance_km
      FROM public.delivery_quotes
      WHERE merchant_id=$1 AND external_order_id=$2 AND request_hash=$3 AND consumed_at IS NULL AND expires_at > now()
      LIMIT 1`,
@@ -217,15 +219,43 @@ async function createPartnerOrder({
   preparationStatus,
   deliveryFeeMinor,
   driverFeeMinor,
+  driverFeeRate,
   vatRate,
   vatAmountMinor,
   totalMinor,
   trackingTokenHash,
   trackingTokenExpiresAt,
+  distanceKm, // quoted distance from merchant to dropoff
 }) {
   const client = await database.connect();
   try {
     await client.query('BEGIN');
+
+    // Convert minor units to SAR (numeric(14,2) columns)
+    // why: orders table stores amounts in SAR with 2dp, matching food order flow
+    const subtotal = Math.round(merchandiseTotalMinor) / 100;
+    const deliveryFee = Math.round(deliveryFeeMinor) / 100;
+    const deliverySurcharge = 0; // partner quotes use flat fee, no surcharge breakdown
+    // Partner orders carry no food margin: the restaurant owns pricing and collects
+    // payment, so platform_margin_total stays 0 (the column's check also bounds it
+    // to <= subtotal). Platform delivery earnings are reported as
+    // delivery_fee - driver_fee — the same convention as marketplace food orders
+    // (see lib/foodMoney.js), which never posts delivery margin to this column.
+    const platformMarginTotal = 0;
+    const vatAmount = Math.round(vatAmountMinor) / 100;
+    const total = Math.round(totalMinor) / 100;
+    const driverFee = Math.round(driverFeeMinor) / 100;
+    const distanceKmRounded = distanceKm != null ? Math.round(distanceKm * 100) / 100 : null;
+
+    // Map external payment status to internal payment_status
+    // why: trust boundary - only allow known statuses
+    const paymentStatusMap = {
+      paid: 'paid',
+      pending: 'awaiting',
+      failed: 'failed',
+      refunded: 'refunded',
+    };
+    const paymentStatus = paymentStatusMap[externalPaymentStatus] || 'awaiting';
 
     // Insert order
     const { rows: orderRows } = await client.query(
@@ -234,33 +264,45 @@ async function createPartnerOrder({
          customer_name, customer_mobile, delivery_address, delivery_lat, delivery_lng,
          delivery_street, delivery_building, contact_phone,
          subtotal, delivery_fee, delivery_surcharge, platform_margin_total, vat_rate, vat_amount, total,
-         distance_km, status, tracking_token_hash, tracking_token_expires_at, idempotency_response_encrypted
-       ) VALUES($1,'restaurant_partner',$2,'restaurant','external','paid',
-         $3,$4,$5,$6,$7,$8,$9,$4,
-         $10,$11,$12,$13,$14,$15,$16,$17,'accepted',$18,$19,$20)
+         driver_fee, driver_fee_rate, distance_km, status, tracking_token_hash, tracking_token_expires_at, idempotency_response_encrypted
+       ) VALUES($1,'restaurant_partner',$2,'restaurant','external',$3,
+         $4,$5,$6,$7,$8,$9,$10,$5,
+         $11,$12,$13,$14,$15,$16,$17,
+         $18,$19,$20,'accepted',$21,$22,$23)
        RETURNING id,order_code,merchant_id,status,created_at`,
-      [merchantId, externalOrderId, customerName, customerPhone, dropoffAddress,
+      [merchantId, externalOrderId, paymentStatus, customerName, customerPhone, dropoffAddress,
        dropoffLat, dropoffLng, dropoffInstructions || null, null,
-       merchandiseTotalMinor, deliveryFeeMinor, 0, 0, vatRate, vatAmountMinor, totalMinor,
-       0, // distance_km - will compute
-       trackingTokenHash, trackingTokenExpiresAt, null]
+       subtotal, deliveryFee, deliverySurcharge, platformMarginTotal, vatRate, vatAmount, total,
+       driverFee, driverFeeRate, distanceKmRounded, trackingTokenHash, trackingTokenExpiresAt, null]
     );
     const order = orderRows[0];
 
-    // Insert order items
+    // Insert order items with real prices
+    // Validate that Σ line_total ≈ merchandise_total within 1 minor unit
+    let itemsSubtotalMinor = 0;
     for (const item of items) {
+      const unitPrice = item.unit_price_minor != null ? Math.round(item.unit_price_minor) / 100 : 0;
+      const lineTotal = unitPrice * item.quantity;
+      itemsSubtotalMinor += Math.round(lineTotal * 100);
       await client.query(
         `INSERT INTO public.order_items(order_id,menu_item_id,name_snapshot,size_snapshot,quantity,unit_price,line_total)
          VALUES($1,$2,$3,$4,$5,$6,$7)`,
-        [order.id, null, item.name, null, item.quantity, 0, 0] // prices snapshotted elsewhere
+        [order.id, null, item.name, null, item.quantity, unitPrice, lineTotal]
       );
+    }
+
+    // Validate item totals match merchandise_total within 1 minor unit
+    if (Math.abs(itemsSubtotalMinor - merchandiseTotalMinor) > 1) {
+      const err = new Error(`item_totals_mismatch: expected ${merchandiseTotalMinor}, got ${itemsSubtotalMinor}`);
+      err.code = 'ITEM_TOTALS_MISMATCH';
+      throw err;
     }
 
     // Insert delivery
     await client.query(
       `INSERT INTO public.deliveries(order_id,merchant_id,status,driver_fee)
        VALUES($1,$2,'searching',$3)`,
-      [order.id, merchantId, driverFeeMinor]
+      [order.id, merchantId, driverFee]
     );
 
     // Insert background job for dispatch
@@ -270,6 +312,21 @@ async function createPartnerOrder({
        ON CONFLICT (kind,dedup_key) DO NOTHING`,
       [`dispatch:${order.id}`, JSON.stringify({ orderId: order.id, source: 'restaurant_partner' })]
     );
+
+    // Consume the quote inside the SAME transaction (compare-and-swap).
+    // why: consuming after commit would leave an orphan order — plus its delivery
+    // row and queued dispatch job — if the quote was consumed in between (racing
+    // request or operator action). Here, a lost race rolls everything back.
+    const { rows: consumedRows } = await client.query(
+      `UPDATE public.delivery_quotes SET consumed_at=now(), consumed_by_order_id=$1
+       WHERE id=$2 AND consumed_at IS NULL RETURNING id`,
+      [order.id, quoteId]
+    );
+    if (!consumedRows.length) {
+      const err = new Error('quote_already_consumed');
+      err.code = 'QUOTE_ALREADY_CONSUMED';
+      throw err;
+    }
 
     await client.query('COMMIT');
     return order;

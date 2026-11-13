@@ -88,6 +88,7 @@ router.post(
         properties: {
           name: { type: 'string', required: true, maxLength: 200 },
           quantity: { type: 'integer', required: true, min: 1, max: 100 },
+          unit_price_minor: { type: 'integer', required: true, min: 0 },
         },
       },
     },
