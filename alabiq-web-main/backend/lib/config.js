@@ -348,6 +348,36 @@ const config = {
     web: process.env.PUBLIC_WEB_URL || (process.env.CORS_ORIGINS || '').split(',')[0] || '',
     api: process.env.PUBLIC_API_BASE || '',
   },
+
+  // Partner API (delivery-as-a-service) — feature-flagged, off by default
+  partnerApi: {
+    enabled: toBool(process.env.PARTNER_API_ENABLED, false),
+    legacyMarketplaceEnabled: toBool(process.env.LEGACY_FOOD_MARKETPLACE_ENABLED, true),
+    rateLimitPerMinute: toNumber(process.env.PARTNER_API_RATE_LIMIT_PER_MINUTE, 120),
+    quoteTtlSeconds: toNumber(process.env.PARTNER_QUOTE_TTL_SECONDS, 600),
+    idempotencyRetentionHours: toNumber(process.env.PARTNER_IDEMPOTENCY_RETENTION_HOURS, 24),
+    webhookSecretKey: process.env.PARTNER_WEBHOOK_SECRET_KEY || '',
+    webhookTimeoutMs: toNumber(process.env.PARTNER_WEBHOOK_TIMEOUT_MS, 5000),
+    webhookRetryWindowHours: toNumber(process.env.PARTNER_WEBHOOK_RETRY_WINDOW_HOURS, 24),
+  },
+
+  // Worker (background job processor) — feature-flagged, off by default
+  worker: {
+    enabled: toBool(process.env.WORKER_ENABLED, false),
+    dispatchConcurrency: toNumber(process.env.WORKER_DISPATCH_CONCURRENCY, 5),
+    webhookConcurrency: toNumber(process.env.WORKER_WEBHOOK_CONCURRENCY, 3),
+    gpsSamplingConcurrency: toNumber(process.env.WORKER_GPS_SAMPLING_CONCURRENCY, 2),
+    jobLeaseSeconds: toNumber(process.env.WORKER_JOB_LEASE_SECONDS, 30),
+    heartbeatIntervalMs: toNumber(process.env.WORKER_HEARTBEAT_INTERVAL_MS, 10000),
+  },
+
+  // Redis GPS hot path
+  locationRedis: {
+    ttlSeconds: toNumber(process.env.LOCATION_REDIS_TTL_SECONDS, 90),
+    samplingIntervalSeconds: toNumber(process.env.LOCATION_SAMPLING_INTERVAL_SECONDS, 10),
+    accuracyThresholdMeters: toNumber(process.env.LOCATION_ACCURACY_THRESHOLD_METERS, 100),
+    maxPlausibleSpeedKmh: toNumber(process.env.LOCATION_MAX_PLAUSIBLE_SPEED_KMH, 120),
+  },
 };
 
 module.exports = { config };

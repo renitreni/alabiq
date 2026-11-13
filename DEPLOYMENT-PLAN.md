@@ -128,6 +128,14 @@ New checkout at `/opt/SmartMappiaa/alabiq-docker` (old checkout left untouched f
 | R2 | Long bcrypt tail | After D2-A, track re-hash progress; remove shim in a later release | — |
 | R3 | MinIO public images | Public bucket served only through the API gateway — no extra host port | Already the design |
 
+### Second origin — alabiq.yaramay.online (2026-11-12) ✅
+
+- New nginx vhost `alabiq.yaramay.online`: static SPA from `/var/www/alabiq` + same-origin API proxy `location /api/` → `127.0.0.1:4001` (docker API), with the SSE-safe `location = /api/events` block (buffering off, 75 s timeouts) and `client_max_body_size 12m`. TLS via Certbot (expires 2027-02-10, auto-renew); port 80 → 301 HTTPS.
+- Frontend built **on the server** from the live checkout `/opt/SmartMappiaa/smartmappiaa-docker/smartmappia-web-main` (f5a7782 + uncommitted fixes) with `VITE_API_BASE=https://alabiq.yaramay.online` passed inline (server `frontend/.env` untouched — still `VITE_MAP_PROVIDER=mapbox`); `dist/` rsynced to `/var/www/alabiq`.
+- `backend/.env` `CORS_ORIGINS` now includes `https://alabiq.yaramay.online` (backup: `backend/.env.bak-20261112`); API container recreated via `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d api`; `127.0.0.1:4001` listener re-verified.
+- Smoke (external): site 200, HTTP→HTTPS 301, `POST /api/auth/login` 401 (reachable), CORS preflight returns `Access-Control-Allow-Origin: https://alabiq.yaramay.online`, `/api/events` 403 (auth-guarded, reachable). Neighbor sites (smartmappia.com, yaramay.online) re-verified 200.
+- Note: both origins now share the same API/DB. `PUBLIC_API_BASE`/`PUBLIC_WEB_URL` in `backend/.env` still point at smartmappia.com — server-generated absolute URLs (emails, signed links) will use that origin.
+
 ## 9. Definition of done
 
 - `api.alabiq.com` served by the Docker API (verify via response header/container log).

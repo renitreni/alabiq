@@ -28,6 +28,8 @@ const paymentRoutes = require('./routes/payments');
 const paymentMethodRoutes = require('./routes/paymentMethods');
 const fileRoutes = require('./routes/files');
 const eventRoutes = require('./routes/events');
+const partnerRoutes = require('./routes/partner');
+const publicTrackingRoutes = require('./routes/publicTracking');
 const { config } = require('./lib/config');
 const { requestContext } = require('./lib/requestContext');
 const { reportFatal } = require('./lib/errorLog');
@@ -174,6 +176,8 @@ if (config.tap.secretKey) {
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/route', routeRoutes);
 app.use('/api/food', foodRoutes);
+app.use('/api/partner', partnerRoutes);
+app.use('/api/public', publicTrackingRoutes);
 app.use('/api/locations', locationRoutes);
 
 // Friendly root

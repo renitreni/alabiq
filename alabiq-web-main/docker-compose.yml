@@ -135,6 +135,47 @@ services:
       - "${WEB_PORT:-8080}:80"
     networks: [app]
 
+  worker:
+    build: ./backend
+    command: ["node", "worker.js"]
+    restart: unless-stopped
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      REALTIME_INTERNAL_URL: http://realtime:4100
+      REALTIME_PUBLISH_TOKEN: ${REALTIME_PUBLISH_TOKEN:?Set REALTIME_PUBLISH_TOKEN in .env}
+      DATABASE_URL: postgres://${APP_DB_USER:-alabiq_app}:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-alabiq}
+      OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      OBJECT_STORAGE_REGION: us-east-1
+      OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-alabiq}
+      OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      OBJECT_STORAGE_FORCE_PATH_STYLE: "true"
+      WORKER_ENABLED: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      seed-reference:
+        condition: service_completed_successfully
+      realtime:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks: [app]
+    # Add healthcheck
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('./lib/database/pool').query('SELECT 1').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 volumes:
   postgres_data:
   redis_data:

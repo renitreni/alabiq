@@ -114,4 +114,20 @@ module.exports = {
   // unauthenticated endpoint. It is also exempt from the global limiter in
   // app.js for the same reason.
   webhookLimiter: make(300),
+
+  // --- Partner API (delivery-as-a-service) ---
+  // Credential-scoped in addition to IP; the middleware applies per-credential
+  // limits. This is the fallback IP-based bucket.
+  partnerApiLimiter: (() => {
+    const { config } = require('../lib/config');
+    const { ipKeyGenerator } = require('express-rate-limit');
+    return rateLimit({
+      windowMs: 60 * 1000,
+      max: (req) => req.partnerCredential ? config.partnerApi.rateLimitPerMinute : 60,
+      standardHeaders: true,
+      legacyHeaders: false,
+      keyGenerator: (req) => req.partnerCredential ? `partner:${req.partnerCredential.id}` : ipKeyGenerator(req),
+      message: { error: 'Partner API rate limit exceeded — please slow down.' },
+    });
+  })(),
 };
