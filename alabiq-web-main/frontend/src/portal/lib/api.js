@@ -727,4 +727,3 @@ export const api = {
   adminPartnerReplayWebhookDelivery: (endpointId, deliveryId) =>
     request(`/api/admin/partner/webhook-endpoints/${endpointId}/deliveries/${deliveryId}/replay`, { method: 'POST' }),
 };
-EOF
