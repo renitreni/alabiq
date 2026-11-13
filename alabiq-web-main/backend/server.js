@@ -18,7 +18,6 @@ installProcessHandlers();
 
 const app = require('./app');
 const { config } = require('./lib/config');
-const { startDispatchSweeper } = require('./lib/dispatch');
 
 const PORT = process.env.PORT || 4000;
 
@@ -33,9 +32,7 @@ if (config.autoVerifyTestMode) {
 
 app.listen(PORT, () => {
   console.log(`Alabiq API running on http://localhost:${PORT}`);
-  // Grab-style dispatch: expire 30s driver offers and cascade to the next
-  // driver. Long-running server only (Hostinger VPS / local); on serverless
-  // there is no interval — jobs still surface via the open-pool fallback.
-  startDispatchSweeper();
+  // Schedulers (dispatch sweeper, preparing reminders, shop stale orders)
+  // are owned by the worker process. The API server does NOT start them.
   startErrorLogPruner();
 });

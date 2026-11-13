@@ -260,23 +260,15 @@ async function runWebhookProcessor() {
 // --- Schedulers (moved from server.js) -------------------------------------
 
 const { startDispatchSweeper } = require('./lib/dispatch');
-const { sweepOrdersAwaitingPreparing } = require('./lib/foodPreparingReminder');
-const { sweepStaleShopOrders } = require('./lib/dispatch');
 
 let schedulersStarted = false;
 function startSchedulers() {
   if (schedulersStarted) return;
   schedulersStarted = true;
 
-  // Dispatch sweeper (offer expiry, abandon watchdog)
+  // Dispatch sweeper includes: offer expiry, abandon watchdog, shop stale orders,
+  // food preparing reminders, unconfirmed charges
   startDispatchSweeper();
-
-  // Food preparing reminder
-  const { config: cfg } = require('./lib/config');
-  setInterval(() => sweepOrdersAwaitingPreparing(), cfg.food.preparingReminderSweepMs);
-
-  // Shop stale orders
-  setInterval(() => sweepStaleShopOrders(), cfg.shop.staleSweepMs);
 
   console.log('[worker] Schedulers started');
 }

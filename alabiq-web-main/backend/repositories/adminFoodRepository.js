@@ -314,6 +314,7 @@ async function deleteItem(id) {
 const ORDER_SELECT = `o.id,o.order_code,o.status,o.payment_status,o.payment_method,o.subtotal,o.delivery_fee,
   o.platform_margin_total,o.vat_amount,o.total,o.delivery_address,o.delivery_street,o.delivery_building,
   o.contact_phone,o.created_at,o.accepted_at,
+  o.source,o.external_order_id,
   m.id AS merchant_id,m.name AS merchant_name,
   c.full_name AS customer_full_name,c.mobile_number AS customer_mobile_number,
   d.order_id AS delivery_row_id,d.driver_id AS delivery_driver_id,d.status AS delivery_status,

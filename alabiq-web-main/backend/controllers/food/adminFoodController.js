@@ -670,6 +670,8 @@ async function listOrders(req, res) {
         hasDeliveryPhoto: !!(delivery && delivery.delivery_photo_path),
         paymentReference: payment ? payment.gateway_transaction_id : null,
         proofUrl: proofUrlByOrder.get(o.id) || null,
+        source: o.source || 'alabiq_marketplace',
+        externalOrderId: o.external_order_id || null,
         createdAt: o.created_at,
         acceptedAt: o.accepted_at,
       };

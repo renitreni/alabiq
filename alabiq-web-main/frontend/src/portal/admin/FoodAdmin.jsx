@@ -356,6 +356,8 @@ export default function FoodAdmin() {
   // --- Orders DataTable ---
   const orderColumns = useMemo(() => [
     createColumn({ key: 'orderCode', header: 'Code', cell: (o) => <code className="font-mono text-xs">{o.order_code}</code> }),
+    createColumn({ key: 'source', header: 'Source', cell: (o) => <span className="text-xs font-medium">{o.source || 'alabiq_marketplace'}</span> }),
+    createColumn({ key: 'externalOrderId', header: 'External ID', cell: (o) => <span className="text-xs font-mono text-brand-grey">{o.externalOrderId || o.external_order_id || '—'}</span> }),
     createColumn({ key: 'merchant', header: 'Restaurant', cell: (o) => o.merchant?.name || '—' }),
     createColumn({ key: 'customer', header: 'Customer', cell: (o) => o.customer?.name || '—' }),
     createColumn({ key: 'status', header: 'Status', cell: (o) => <StatusBadge status={o.status} /> }),
@@ -395,6 +397,8 @@ export default function FoodAdmin() {
         merchant: o.merchants ? { name: o.merchants.name } : null,
         customer: o.customer ? { name: o.customer.name } : null,
         driver: o.driver ? { name: o.driver.name } : null,
+        source: o.source,
+        externalOrderId: o.externalOrderId,
       })),
       pagination: res.pagination || { total: res.total || 0, totalPages: res.totalPages || 1, page: res.page || 1, limit: res.limit || 25 },
     };
@@ -461,8 +465,8 @@ export default function FoodAdmin() {
     <div className="p-4 border-t border-brand-border bg-brand-surface/30 space-y-3">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div><p className="text-xs text-brand-grey uppercase tracking-wider">Order Code</p><p className="font-mono font-bold">{row.order_code}</p></div>
-        <div><p className="text-xs text-brand-grey uppercase tracking-wider">Status</p><p><StatusBadge status={row.status} /></p></div>
-        <div><p className="text-xs text-brand-grey uppercase tracking-wider">Payment</p><p><PaymentBadge status={row.payment_status} /></p></div>
+        <div><p className="text-xs text-brand-grey uppercase tracking-wider">Source</p><p className="font-medium text-xs">{row.source || 'alabiq_marketplace'}</p></div>
+        <div><p className="text-xs text-brand-grey uppercase tracking-wider">External ID</p><p className="font-mono text-xs text-brand-grey">{row.externalOrderId || row.external_order_id || '—'}</p></div>
         <div><p className="text-xs text-brand-grey uppercase tracking-wider">Total</p><p className="font-bold">{fmtSAR(row.total)}</p></div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -470,6 +474,12 @@ export default function FoodAdmin() {
         <div><p className="text-xs text-brand-grey uppercase tracking-wider">Phone</p><p>{row.customer?.phone || '—'}</p></div>
         <div><p className="text-xs text-brand-grey uppercase tracking-wider">Restaurant</p><p>{row.merchant?.name || '—'}</p></div>
         <div><p className="text-xs text-brand-grey uppercase tracking-wider">Driver</p><p>{row.driver?.name || 'Unassigned'}</p></div>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div><p className="text-xs text-brand-grey uppercase tracking-wider">Status</p><p><StatusBadge status={row.status} /></p></div>
+        <div><p className="text-xs text-brand-grey uppercase tracking-wider">Payment</p><p><PaymentBadge status={row.payment_status} /></p></div>
+        <div></div>
+        <div></div>
       </div>
       <div className="flex flex-wrap gap-2">
         {/* STC Pay screenshot */}
