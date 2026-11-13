@@ -12,7 +12,8 @@ const ACTIVE_DELIVERY_STATUSES = ['searching', 'assigned', 'picked_up'];
 async function getPublicTracking(req, res) {
   try {
     const { trackingId } = req.params;
-    const { token } = req.query;
+    // Accept token from query param or header (for frontend API client)
+    const token = req.query.token || req.headers['x-tracking-token'];
     const requestId = req.headers['x-request-id'] || crypto.randomUUID();
 
     if (!token) {
@@ -64,7 +65,8 @@ async function getPublicTracking(req, res) {
 async function getPublicTrackingSSE(req, res) {
   try {
     const { trackingId } = req.params;
-    const { token } = req.query;
+    // Accept token from query param or header (for frontend API client)
+    const token = req.query.token || req.headers['x-tracking-token'];
     const requestId = req.headers['x-request-id'] || crypto.randomUUID();
 
     if (!token) {

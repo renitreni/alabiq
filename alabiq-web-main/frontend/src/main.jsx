@@ -15,6 +15,7 @@ import HomePage from './portal/user/HomePage.jsx'
 import BookPage from './portal/user/BookPage.jsx'
 import PayPage from './portal/user/PayPage.jsx'
 import TrackPage from './portal/user/TrackPage.jsx'
+import PublicDeliveryTrackPage from './portal/user/PublicDeliveryTrackPage.jsx'
 import DriverPage from './portal/driver/DriverPage.jsx'
 import MerchantPortal from './portal/merchant/MerchantPortal.jsx'
 import AdminPage from './portal/admin/AdminPage.jsx'
@@ -109,6 +110,8 @@ createRoot(document.getElementById('root')).render(
             {/* Payment + tracking stay open by booking code. */}
             <Route path="/pay/:code" element={<PayPage />} />
             <Route path="/track/:code" element={<TrackPage />} />
+            {/* Public delivery tracking (guest access with token) */}
+            <Route path="/track/delivery/:trackingId" element={<PublicDeliveryTrackPage />} />
 
             <Route path="/driver" element={<RequireAuth role="driver"><DriverPage /></RequireAuth>} />
             {/* MerchantPortal resolves the owner's vertical server-side and

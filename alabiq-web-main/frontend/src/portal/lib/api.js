@@ -139,6 +139,18 @@ export const api = {
       body,
       headers: { 'Idempotency-Key': idempotencyKey || crypto.randomUUID() },
     }),
+
+  // --- public tracking (guest access with token) ---
+  publicDeliveryTracking: (trackingId, token) => request(`/api/public/deliveries/${trackingId}`, { 
+    silent: true, 
+    headers: { 'X-Tracking-Token': token } 
+  }),
+  publicDeliveryTrackingSSE: (trackingId, token) => request(`/api/public/deliveries/${trackingId}/stream`, { 
+    silent: true, 
+    headers: { 'X-Tracking-Token': token } 
+  }),
+
+  // --- tracking ---
   tracking: (code) => request(`/api/tracking/${code}`, { silent: true }), // polled every 8s
 
   // --- location search / nearby places (Google Places + Geocoding via backend) ---

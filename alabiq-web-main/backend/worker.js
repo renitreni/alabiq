@@ -24,6 +24,51 @@ let shuttingDown = false;
 let leaseRenewalInterval = null;
 let heartbeatInterval = null;
 
+// --- Webhook URL validation (SSRF defense) -----------------------------------
+
+const BLOCKED_HOSTNAMES = new Set([
+  'localhost',
+  '127.0.0.1',
+  '::1',
+  '0.0.0.0',
+  'metadata.google.internal',
+  '169.254.169.254', // AWS/GCP/Azure metadata
+]);
+
+const ALLOWED_PROTOCOLS = ['https:'];
+const MAX_WEBHOOK_ATTEMPTS = 10; // ~24 hours with exponential backoff
+
+function isValidWebhookUrl(url) {
+  try {
+    const parsed = new URL(url);
+    
+    // Only allow HTTPS
+    if (!ALLOWED_PROTOCOLS.includes(parsed.protocol)) {
+      return { valid: false, reason: 'Only HTTPS URLs are allowed' };
+    }
+    
+    // Block localhost and private IPs
+    const hostname = parsed.hostname.toLowerCase();
+    if (BLOCKED_HOSTNAMES.has(hostname)) {
+      return { valid: false, reason: 'Localhost/private IPs are blocked' };
+    }
+    
+    // Block private IP ranges (RFC 1918)
+    const ipMatch = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if (ipMatch) {
+      const [, a, b] = ipMatch.map(Number);
+      // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+      if (a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168)) {
+        return { valid: false, reason: 'Private IP ranges are blocked' };
+      }
+    }
+    
+    return { valid: true };
+  } catch (e) {
+    return { valid: false, reason: 'Invalid URL format' };
+  }
+}
+
 // --- Database helpers ------------------------------------------------------
 
 async function query(sql, params = []) {
@@ -229,27 +274,72 @@ async function runWebhookProcessor() {
     const deliveries = await partnerRepository.getPendingWebhookDeliveries(config.worker.webhookConcurrency * 2);
     for (const wd of deliveries) {
       try {
-        // Send webhook
+        // SSRF defense: validate URL before sending
+        const urlValidation = isValidWebhookUrl(wd.url);
+        if (!urlValidation.valid) {
+          console.warn('[worker] Webhook URL blocked by SSRF defense:', { deliveryId: wd.id, url: wd.url, reason: urlValidation.reason });
+          await partnerRepository.updateWebhookDeliveryAttempt(wd.id, { 
+            attempt: wd.attempt + 1, 
+            status: 0, 
+            error: `SSRF blocked: ${urlValidation.reason}`, 
+            completed: true // Mark as completed (dead letter) 
+          });
+          continue;
+        }
+        
+        // Check max attempts - mark as dead letter
+        if (wd.attempt >= MAX_WEBHOOK_ATTEMPTS) {
+          console.warn('[worker] Webhook max attempts reached, marking as dead letter:', { deliveryId: wd.id });
+          await partnerRepository.updateWebhookDeliveryAttempt(wd.id, { 
+            attempt: wd.attempt + 1, 
+            status: 0, 
+            error: 'Max retry attempts exceeded', 
+            completed: true 
+          });
+          continue;
+        }
+        
+        // Send webhook with HMAC signature
+        const timestamp = Math.floor(Date.now() / 1000).toString();
+        const signature = require('crypto')
+          .createHmac('sha256', wd.secret_encrypted)
+          .update(`${timestamp}.${JSON.stringify(wd.payload)}`)
+          .digest('hex');
+        
         const response = await fetch(wd.url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'X-Alabiq-Event-Id': wd.id,
-            'X-Alabiq-Timestamp': Math.floor(Date.now() / 1000).toString(),
-            'X-Alabiq-Signature': `v1=${require('crypto').createHmac('sha256', wd.secret_encrypted).update(`${Math.floor(Date.now() / 1000)}.${JSON.stringify(wd.payload)}`).digest('hex')}`,
+            'X-Alabiq-Timestamp': timestamp,
+            'X-Alabiq-Signature': `v1=${signature}`,
             'X-Alabiq-Delivery-Id': wd.delivery_id,
+            'X-Alabiq-Sequence': wd.sequence.toString(), // Replay protection
           },
           body: JSON.stringify(wd.payload),
           signal: AbortSignal.timeout(config.partnerApi.webhookTimeoutMs),
         });
-
+        
         if (response.ok) {
-          await partnerRepository.updateWebhookDeliveryAttempt(wd.id, { attempt: wd.attempt + 1, status: response.status, completed: true });
+          await partnerRepository.updateWebhookDeliveryAttempt(wd.id, { 
+            attempt: wd.attempt + 1, 
+            status: response.status, 
+            completed: true 
+          });
         } else {
-          await partnerRepository.updateWebhookDeliveryAttempt(wd.id, { attempt: wd.attempt + 1, status: response.status, error: `HTTP ${response.status}`, completed: false });
+          await partnerRepository.updateWebhookDeliveryAttempt(wd.id, { 
+            attempt: wd.attempt + 1, 
+            status: response.status, 
+            error: `HTTP ${response.status}`, 
+            completed: false 
+          });
         }
       } catch (err) {
-        await partnerRepository.updateWebhookDeliveryAttempt(wd.id, { attempt: wd.attempt + 1, error: err.message, completed: false });
+        await partnerRepository.updateWebhookDeliveryAttempt(wd.id, { 
+          attempt: wd.attempt + 1, 
+          error: err.message, 
+          completed: false 
+        });
       }
     }
   } catch (err) {
