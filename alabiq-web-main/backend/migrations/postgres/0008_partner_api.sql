@@ -76,7 +76,7 @@ create table public.background_jobs (
 );
 create index background_jobs_due on public.background_jobs(run_at) where completed_at is null;
 create unique index background_jobs_dedup on public.background_jobs(kind, dedup_key) where dedup_key is not null;
-create index background_jobs_lease on public.background_jobs(lease_owner) where lease_expires_at > now();
+create index background_jobs_lease on public.background_jobs(lease_owner) where lease_expires_at is not null;
 
 -- Order/delivery extensions for partner-sourced orders
 alter table public.orders add column if not exists source text not null default 'alabiq_marketplace'

@@ -169,50 +169,19 @@ async function acceptRide(req, res) {
 }
 
 // --- POST /api/driver/location ---------------------------------------
-// Driver app posts GPS periodically. We store it and push it live to the
-// passenger(s) whose active ride this driver is currently handling.
-//
-// The app pings every ~4s so the customer's marker has enough fixes to glide
-// continuously instead of teleporting once every 12s. Accepting that rate does
-// NOT mean doing 3x the work: the two expensive effects are throttled
-// independently below, keeping row growth and Realtime message volume at
-// roughly the old 12s cadence while the map still feels live.
-//
-// State is a module-level Map, i.e. per-process. That is correct on the
-// long-running VPS (one process — the same assumption lib/dispatch.js's
-// sweeper already makes). On serverless each instance would keep its own
-// clock and throttle less aggressively; it degrades toward "write/broadcast
-// every ping", never toward dropping a ride's updates.
-const lastPing = new Map(); // driverId -> { wroteAt, sentAt, lat, lng }
+// Driver app posts GPS periodically. We store it via the Redis hot path
+// (lib/locationIngestion) which provides atomic current+GEO updates,
+// validation, TTL, PostgreSQL fallback, and sampled history.
+// The realtime broadcast to customers remains throttled here.
+const { ingestLocation } = require('../lib/locationIngestion');
 
-// Persist at most one row per this interval. driver_locations is write-heavy
-// and retained 30 days (0016/0028), so 4s pings unthrottled would be ~900
-// rows/hour/driver against a Free-tier budget.
-const WRITE_EVERY_MS = 10000;
-// Broadcast at most this often. Supabase Free allows a finite number of
-// Realtime messages per month and every ping fans out to each active job.
+const lastPing = new Map(); // driverId -> { sentAt, lat, lng }
+
+// Broadcast at most this often. Realtime message budget is finite and
+// every ping fans out to each active ride/delivery.
 const BROADCAST_EVERY_MS = 8000;
-// ...unless the driver has covered an unusual amount of ground since the last
-// push, in which case send early so the marker doesn't visibly cut a corner
-// by interpolating a straight line across a long, curved gap.
-//
-// This is an EXCEPTION, and the threshold has to be picked against the real
-// per-ping distances or it stops being one. Measured with 4s pings:
-//
-//     city      30 km/h  ->  ~37m per ping
-//     road      60 km/h  ->  ~75m per ping
-//     motorway 120 km/h  -> ~147m per ping
-//
-// A first attempt at 60m fired on every ping from 30 km/h upward — the time
-// throttle never applied and Realtime ran at one message per ping, near the
-// Free-tier ceiling. 150m overcorrected: it sat just above the motorway
-// figure, so it never fired at any realistic speed and was dead code.
-//
-// 120m sits in the gap. City and normal road speeds fall well under it and
-// are governed by the 8s window; motorway speed clears it and updates every
-// ping. That is the right bias for an airport-transfer service — the fast
-// leg is where a stale position is most visibly wrong, and it is also where
-// the marker would otherwise interpolate ~290m in a straight line.
+// Distance-aware early broadcast: if the driver has moved significantly
+// since the last push, send immediately so the marker doesn't cut corners.
 const BROADCAST_IF_MOVED_KM = 0.12;
 
 // Keep the Map from growing without bound as drivers come and go across a
@@ -221,7 +190,7 @@ const BROADCAST_IF_MOVED_KM = 0.12;
 function pruneLastPing(now) {
   if (lastPing.size < 500) return;
   for (const [id, v] of lastPing) {
-    if (now - Math.max(v.wroteAt || 0, v.sentAt || 0) > 3600000) lastPing.delete(id);
+    if (now - (v.sentAt || 0) > 3600000) lastPing.delete(id);
   }
 }
 
@@ -237,18 +206,19 @@ async function updateDriverLocation(req, res) {
     const prev = lastPing.get(req.driverId) || {};
     pruneLastPing(now);
 
-    // --- 1. Persist (throttled) ---
-    if (!prev.wroteAt || now - prev.wroteAt >= WRITE_EVERY_MS) {
-      await database.query(`INSERT INTO public.driver_locations
-        (driver_id,lat,lng,accuracy_meters,heading,speed_kmh) VALUES ($1,$2,$3,$4,$5,$6)`, [
-        req.driverId, here.lat, here.lng, accuracy != null ? Number(accuracy) : null,
-        // Device compass/speedometer (migration 0033). Null is normal —
-        // stationary or unsupported — and readers fall back to a derived
-        // bearing rather than treating it as an error.
-        heading != null ? Number(heading) : null,
-        speedKmh != null ? Number(speedKmh) : null,
-      ]);
-      lastPing.set(req.driverId, { ...prev, wroteAt: now });
+    // --- 1. Persist via Redis hot path (atomic current+GEO, validation, TTL, PG fallback) ---
+    const ingestResult = await ingestLocation(req.driverId, {
+      lat: here.lat,
+      lng: here.lng,
+      recorded_at: now,
+      accuracy: accuracy != null ? Number(accuracy) : undefined,
+      heading: heading != null ? Number(heading) : undefined,
+      speed_kmh: speedKmh != null ? Number(speedKmh) : undefined,
+    });
+
+    if (!ingestResult.accepted) {
+      // Validation failed (stale fix, implausible jump, bad payload)
+      return res.status(400).json({ error: ingestResult.errors.join(', ') });
     }
 
     // --- 2. Fan out to live maps (throttled, distance-aware) ---

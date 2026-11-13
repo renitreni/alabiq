@@ -182,42 +182,14 @@ async function handleWebhookJob(job) {
 }
 
 async function handleGpsSamplingJob(job) {
-  // Sample current Redis GPS fixes into PostgreSQL history
-  const redis = require('redis').createClient({ url: process.env.REDIS_URL });
-  await redis.connect().catch(() => {}); // optional
+  // Sample current Redis GPS fixes into PostgreSQL history using locationIngestion
+  const { sampleLocationHistory } = require('./lib/locationIngestion');
 
   try {
-    // Get all active drivers with recent fixes
-    const rows = await query(
-      `SELECT driver_id, lat, lng, recorded_at, speed_kmh, heading
-       FROM (
-         SELECT dl.*, ROW_NUMBER() OVER (PARTITION BY dl.driver_id ORDER BY dl.recorded_at DESC) AS rn
-         FROM public.driver_locations dl
-         JOIN public.profiles p ON p.id=dl.driver_id
-         WHERE dl.recorded_at >= now() - interval '2 minutes'
-           AND p.role='driver' AND p.driver_approved=true
-       ) latest WHERE rn=1`
-    );
-
-    // Batch insert into history (sampled, not every fix)
-    if (rows.length > 0) {
-      const values = [];
-      const params = [];
-      let idx = 1;
-      for (const r of rows) {
-        values.push(`($${idx},$${idx+1},$${idx+2},$${idx+3},$${idx+4},$${idx+5})`);
-        params.push(r.driver_id, r.lat, r.lng, r.recorded_at, r.speed_kmh || null, r.heading || null);
-        idx += 6;
-      }
-      await query(
-        `INSERT INTO public.driver_location_history(driver_id,lat,lng,recorded_at,speed_kmh,heading) VALUES ${values.join(',')}`,
-        params
-      );
-    }
+    await sampleLocationHistory();
   } catch (err) {
     console.error('[worker] GPS sampling error:', err);
-  } finally {
-    await redis.quit().catch(() => {});
+    throw err;
   }
 }
 
@@ -352,6 +324,8 @@ async function runWebhookProcessor() {
 const { startDispatchSweeper } = require('./lib/dispatch');
 
 let schedulersStarted = false;
+let gpsSamplingInterval = null;
+
 function startSchedulers() {
   if (schedulersStarted) return;
   schedulersStarted = true;
@@ -359,6 +333,23 @@ function startSchedulers() {
   // Dispatch sweeper includes: offer expiry, abandon watchdog, shop stale orders,
   // food preparing reminders, unconfirmed charges
   startDispatchSweeper();
+
+  // GPS sampling: create gps_sampling jobs at the configured interval
+  const samplingMs = config.locationRedis.samplingIntervalSeconds * 1000;
+  gpsSamplingInterval = setInterval(async () => {
+    if (shuttingDown) return;
+    try {
+      await query(
+        `INSERT INTO public.background_jobs (kind, payload, run_at, max_attempts)
+         VALUES ($1, $2, now(), 3)
+         ON CONFLICT DO NOTHING`,
+        [JOB_KINDS.GPS_SAMPLING, JSON.stringify({})]
+      );
+    } catch (err) {
+      console.error('[worker] GPS sampling job creation error:', err);
+    }
+  }, samplingMs);
+  console.log(`[worker] GPS sampling scheduled every ${config.locationRedis.samplingIntervalSeconds}s`);
 
   console.log('[worker] Schedulers started');
 }
@@ -395,6 +386,7 @@ async function shutdown(signal) {
   // Stop intervals
   if (leaseRenewalInterval) clearInterval(leaseRenewalInterval);
   if (heartbeatInterval) clearInterval(heartbeatInterval);
+  if (gpsSamplingInterval) clearInterval(gpsSamplingInterval);
 
   // Release leases
   await releaseStaleLeases();

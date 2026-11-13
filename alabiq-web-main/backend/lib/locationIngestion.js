@@ -9,6 +9,46 @@
 const { config } = require('./config');
 const database = require('./database/pool');
 
+// --- Ingestion backpressure --------------------------------------------------
+// Bounded concurrent ingestions so rider ping bursts can't exhaust the PG pool/Redis.
+const MAX_CONCURRENT_INGESTIONS = toNumber(process.env.LOCATION_INGESTION_MAX_CONCURRENT, 200);
+let activeIngestions = 0;
+const waitingIngestions = [];
+
+function toNumber(val, fallback) {
+  const n = Number(val);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+async function withIngestionSlot(fn) {
+  if (activeIngestions < MAX_CONCURRENT_INGESTIONS) {
+    activeIngestions++;
+    try {
+      return await fn();
+    } finally {
+      activeIngestions--;
+      // Process next waiting ingestion if any
+      if (waitingIngestions.length > 0) {
+        const next = waitingIngestions.shift();
+        next.resolve(withIngestionSlot(next.fn));
+      }
+    }
+  }
+
+  // Queue is full - reject with backpressure
+  return new Promise((resolve, reject) => {
+    if (waitingIngestions.length >= MAX_CONCURRENT_INGESTIONS) {
+      reject({ backpressure: true, message: 'Ingestion queue full' });
+      return;
+    }
+    waitingIngestions.push({
+      fn,
+      resolve: (v) => resolve(v),
+      reject,
+    });
+  });
+}
+
 let redisClient = null;
 let redisAvailable = false;
 
@@ -309,35 +349,43 @@ async function sampleLocationHistory() {
 // --- Public API ------------------------------------------------------------
 
 async function ingestLocation(driverId, payload) {
-  // Validate
-  const validation = validateLocationPayload(payload);
-  if (!validation.valid) {
-    return { accepted: false, errors: validation.errors };
-  }
+  // Backpressure: bound concurrent ingestions
+  return withIngestionSlot(async () => {
+    // Validate
+    const validation = validateLocationPayload(payload);
+    if (!validation.valid) {
+      return { accepted: false, errors: validation.errors };
+    }
 
-  // Check for stale fix (client-side timestamp)
-  const lastFix = await getCurrentLocation(driverId);
-  if (lastFix && payload.recorded_at <= lastFix.recorded_at) {
-    return { accepted: false, errors: ['Stale fix: timestamp not newer than last accepted'] };
-  }
+    // Check for stale fix (client-side timestamp)
+    const lastFix = await getCurrentLocation(driverId);
+    if (lastFix && payload.recorded_at <= lastFix.recorded_at) {
+      return { accepted: false, errors: ['Stale fix: timestamp not newer than last accepted'] };
+    }
 
-  // Check for implausible jump
-  if (lastFix && !isPlausibleJump(lastFix, payload)) {
-    return { accepted: false, errors: ['Implausible jump: speed exceeds maximum plausible'] };
-  }
+    // Check for implausible jump
+    if (lastFix && !isPlausibleJump(lastFix, payload)) {
+      return { accepted: false, errors: ['Implausible jump: speed exceeds maximum plausible'] };
+    }
 
-  // Check dispatch readiness
-  const dispatchReady = isDispatchReady(payload.accuracy);
+    // Check dispatch readiness
+    const dispatchReady = isDispatchReady(payload.accuracy);
 
-  // Update Redis + GEO
-  await updateCurrentLocation(driverId, payload);
+    // Update Redis + GEO
+    await updateCurrentLocation(driverId, payload);
 
-  return {
-    accepted: true,
-    dispatch_ready: dispatchReady,
-    server_time: Date.now(),
-    next_ping_interval_ms: config.locationRedis.samplingIntervalSeconds * 1000,
-  };
+    return {
+      accepted: true,
+      dispatch_ready: dispatchReady,
+      server_time: Date.now(),
+      next_ping_interval_ms: config.locationRedis.samplingIntervalSeconds * 1000,
+    };
+  }).catch((err) => {
+    if (err?.backpressure) {
+      return { accepted: false, errors: ['Ingestion backpressure: too many concurrent requests'] };
+    }
+    throw err;
+  });
 }
 
 async function getDriverLocationForTracking(driverId) {
