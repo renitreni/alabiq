@@ -16,6 +16,7 @@ import ErrorsView from './ErrorsView';
 import AdminsView from './AdminsView';
 import AccountsView from './AccountsViewV2';
 import SettingsView from './SettingsView';
+import IntegrationsView from './IntegrationsView';
 
 export default function AdminPage() {
   // Notifications deep-link to a tab with ?tab= (see portal/lib/notifications.js).
@@ -48,6 +49,7 @@ export default function AdminPage() {
       {tab === 'admins' && <AdminsView key={`a${tick}`} />}
       {tab === 'accounts' && <AccountsView key={`ac${tick}`} />}
       {tab === 'settings' && <SettingsView key={`st${tick}`} />}
+      {tab === 'integrations' && <IntegrationsView key={`int${tick}`} />}
     </AdminLayout>
   );
 }

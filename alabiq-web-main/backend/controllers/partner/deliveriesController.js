@@ -610,6 +610,239 @@ function buildDeliveryResponse(delivery) {
     } : null,
     cancellation_reason: delivery.reject_reason || null,
   };
+
+// --- Credentials --------------------------------------------------------------
+
+async function listCredentials(req, res) {
+  try {
+    const credentials = await partnerRepository.listCredentialsByMerchant(req.merchantId);
+    const safe = credentials.map(c => ({
+      id: c.id,
+      name: c.name,
+      key_prefix: c.key_prefix,
+      created_at: c.created_at,
+      expires_at: c.expires_at,
+      revoked_at: c.revoked_at,
+      last_used_at: c.last_used_at,
+      created_by: c.created_by,
+    }));
+    return res.json({ credentials: safe });
+  } catch (err) {
+    console.error('listCredentials error:', err);
+    return res.status(500).json({ error: { code: 'service_unavailable', message: 'Unexpected server error', request_id: req.requestId } });
+  }
+}
+
+async function createCredential(req, res) {
+  try {
+    const { name, expires_at } = req.body || {};
+    if (!name || typeof name !== 'string' || name.length > 100) {
+      return res.status(400).json({ error: { code: 'invalid_name', message: 'Credential name is required (max 100 chars)' } });
+    }
+    const crypto = require('crypto');
+    const keyPrefix = 'ak_live_' + crypto.randomBytes(8).toString('hex');
+    const secret = crypto.randomBytes(24).toString('base64url');
+    const { hashPassword } = require('../lib/passwords');
+    const secretHash = await hashPassword(secret);
+    const expiresAt = expires_at ? new Date(expires_at) : null;
+    if (expiresAt && isNaN(expiresAt.getTime())) {
+      return res.status(400).json({ error: { code: 'invalid_expiry', message: 'expires_at must be a valid ISO 8601 timestamp' } });
+    }
+    const credential = await partnerRepository.createCredential({
+      merchantId: req.merchantId,
+      name,
+      keyPrefix,
+      secretHash,
+      createdBy: req.userId,
+    });
+    return res.status(201).json({
+      credential: {
+        id: credential.id,
+        name: credential.name,
+        key_prefix: credential.key_prefix,
+        created_at: credential.created_at,
+        expires_at: credential.expires_at,
+        revoked_at: credential.revoked_at,
+        last_used_at: credential.last_used_at,
+        created_by: credential.created_by,
+      },
+      secret,
+    });
+  } catch (err) {
+    console.error('createCredential error:', err);
+    return res.status(500).json({ error: { code: 'service_unavailable', message: 'Unexpected server error', request_id: req.requestId } });
+  }
+}
+
+// --- Credentials (cont.) ------------------------------------------------------
+
+async function revokeCredential(req, res) {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: { code: 'missing_id', message: 'Credential ID is required' } });
+    const creds = await partnerRepository.listCredentialsByMerchant(req.merchantId);
+    const cred = creds.find(c => c.id === id);
+    if (!cred) return res.status(404).json({ error: { code: 'not_found', message: 'Credential not found' } });
+    await partnerRepository.revokeCredential(id);
+    return res.json({ revoked: true });
+  } catch (err) {
+    console.error('revokeCredential error:', err);
+    return res.status(500).json({ error: { code: 'service_unavailable', message: 'Unexpected server error', request_id: req.requestId } });
+  }
+}
+
+// --- Credentials (cont.) ------------------------------------------------------
+
+async function rotateCredential(req, res) {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: { code: 'missing_id', message: 'Credential ID is required' } });
+    const creds = await partnerRepository.listCredentialsByMerchant(req.merchantId);
+    const cred = creds.find(c => c.id === id);
+    if (!cred) return res.status(404).json({ error: { code: 'not_found', message: 'Credential not found' } });
+    await partnerRepository.revokeCredential(id);
+    const crypto = require('crypto');
+    const keyPrefix = 'ak_live_' + crypto.randomBytes(8).toString('hex');
+    const secret = crypto.randomBytes(24).toString('base64url');
+    const { hashPassword } = require('../lib/passwords');
+    const secretHash = await hashPassword(secret);
+    const newCred = await partnerRepository.createCredential({
+      merchantId: req.merchantId,
+      name: cred.name + ' (rotated)',
+      keyPrefix,
+      secretHash,
+      createdBy: req.userId,
+    });
+    return res.status(201).json({
+      credential: {
+        id: newCred.id,
+        name: newCred.name,
+        key_prefix: newCred.key_prefix,
+        created_at: newCred.created_at,
+        expires_at: newCred.expires_at,
+        revoked_at: newCred.revoked_at,
+        last_used_at: newCred.last_used_at,
+        created_by: newCred.created_by,
+      },
+      secret,
+    });
+  } catch (err) {
+    console.error('rotateCredential error:', err);
+    return res.status(500).json({ error: { code: 'service_unavailable', message: 'Unexpected server error', request_id: req.requestId } });
+  }
+}
+
+// --- Webhook Endpoints --------------------------------------------------------
+
+async function listWebhookEndpoints(req, res) {
+  try {
+    const endpoints = await partnerRepository.getWebhookEndpoints(req.merchantId);
+    return res.json({ endpoints });
+  } catch (err) {
+    console.error('listWebhookEndpoints error:', err);
+    return res.status(500).json({ error: { code: 'service_unavailable', message: 'Unexpected server error', request_id: req.requestId } });
+  }
+}
+
+async function createWebhookEndpoint(req, res) {
+  try {
+    const { url, events, is_active } = req.body || {};
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ error: { code: 'invalid_url', message: 'Webhook URL is required' } });
+    }
+    const { isValidWebhookUrl } = require('../../worker');
+    const urlValidation = isValidWebhookUrl(url);
+    if (!urlValidation.valid) {
+      return res.status(400).json({ error: { code: 'invalid_url', message: urlValidation.reason } });
+    }
+    const eventList = Array.isArray(events) && events.length > 0 ? events : [
+      'delivery.searching', 'delivery.rider_assigned', 'delivery.picked_up',
+      'delivery.delivered', 'delivery.cancelled', 'delivery.search_exhausted'
+    ];
+    const endpoint = await partnerRepository.createWebhookEndpoint({
+      merchantId: req.merchantId,
+      url,
+      events: eventList,
+      isActive: is_active !== false,
+    });
+    return res.status(201).json({ endpoint });
+  } catch (err) {
+    console.error('createWebhookEndpoint error:', err);
+    return res.status(500).json({ error: { code: 'service_unavailable', message: 'Unexpected server error', request_id: req.requestId } });
+  }
+}
+
+async function updateWebhookEndpoint(req, res) {
+  try {
+    const { id } = req.params;
+    const { url, events, is_active } = req.body || {};
+    if (!id) return res.status(400).json({ error: { code: 'missing_id', message: 'Endpoint ID is required' } });
+    if (url) {
+      const { isValidWebhookUrl } = require('../../worker');
+      const urlValidation = isValidWebhookUrl(url);
+      if (!urlValidation.valid) {
+        return res.status(400).json({ error: { code: 'invalid_url', message: urlValidation.reason } });
+      }
+    }
+    const updates = {};
+    if (url !== undefined) updates.url = url;
+    if (events !== undefined) updates.events = events;
+    if (is_active !== undefined) updates.is_active = is_active;
+    const endpoint = await partnerRepository.updateWebhookEndpoint(id, req.merchantId, updates);
+    if (!endpoint) return res.status(404).json({ error: { code: 'not_found', message: 'Webhook endpoint not found' } });
+    return res.json({ endpoint });
+  } catch (err) {
+    console.error('updateWebhookEndpoint error:', err);
+    return res.status(500).json({ error: { code: 'service_unavailable', message: 'Unexpected server error', request_id: req.requestId } });
+  }
+}
+
+async function deleteWebhookEndpoint(req, res) {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: { code: 'missing_id', message: 'Endpoint ID is required' } });
+    const deleted = await partnerRepository.deleteWebhookEndpoint(id, req.merchantId);
+    if (!deleted) return res.status(404).json({ error: { code: 'not_found', message: 'Webhook endpoint not found' } });
+    return res.json({ deleted: true });
+  } catch (err) {
+    console.error('deleteWebhookEndpoint error:', err);
+    return res.status(500).json({ error: { code: 'service_unavailable', message: 'Unexpected server error', request_id: req.requestId } });
+  }
+}
+
+async function getWebhookDeliveries(req, res) {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: { code: 'missing_id', message: 'Endpoint ID is required' } });
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const offset = parseInt(req.query.offset) || 0;
+    const deliveries = await partnerRepository.getWebhookDeliveries(id, req.merchantId, limit, offset);
+    return res.json({ deliveries });
+  } catch (err) {
+    console.error('getWebhookDeliveries error:', err);
+    return res.status(500).json({ error: { code: 'service_unavailable', message: 'Unexpected server error', request_id: req.requestId } });
+  }
+}
+
+async function replayWebhookDelivery(req, res) {
+  try {
+    const { id, deliveryId } = req.params;
+    if (!id || !deliveryId) return res.status(400).json({ error: { code: 'missing_id', message: 'Endpoint ID and Delivery ID are required' } });
+    const deliveries = await partnerRepository.getWebhookDeliveries(id, req.merchantId, 1, 0);
+    const delivery = deliveries.find(d => d.id === deliveryId);
+    if (!delivery) return res.status(404).json({ error: { code: 'not_found', message: 'Webhook delivery not found' } });
+    await partnerRepository.enqueueWebhookDelivery({
+      endpointId: id,
+      eventType: delivery.event_type,
+      deliveryId: delivery.delivery_id,
+      payload: delivery.payload,
+      sequence: delivery.sequence,
+    });
+    return res.json({ replay_queued: true });
+  } catch (err) {
+    console.error('replayWebhookDelivery error:', err);
+    return res.status(500).json({ error: { code: 'service_unavailable', message: 'Unexpected server error', request_id: req.requestId } });
+  }
 }
 
 module.exports = {
@@ -619,4 +852,16 @@ module.exports = {
   cancelDelivery,
   updatePreparation,
   rotateTrackingToken,
+  // Credentials
+  listCredentials,
+  createCredential,
+  revokeCredential,
+  rotateCredential,
+  // Webhook endpoints
+  listWebhookEndpoints,
+  createWebhookEndpoint,
+  updateWebhookEndpoint,
+  deleteWebhookEndpoint,
+  getWebhookDeliveries,
+  replayWebhookDelivery,
 };

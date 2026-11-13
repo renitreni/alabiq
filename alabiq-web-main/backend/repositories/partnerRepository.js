@@ -34,10 +34,17 @@ async function getActiveCredentialByPrefix(keyPrefix) {
 }
 
 async function listCredentialsByMerchant(merchantId) {
+  if (merchantId) {
+    const { rows } = await database.query(
+      `SELECT id,merchant_id,name,key_prefix,created_at,expires_at,revoked_at,last_used_at,created_by
+       FROM public.partner_api_credentials WHERE merchant_id=$1 ORDER BY created_at DESC`,
+      [merchantId]
+    );
+    return rows;
+  }
   const { rows } = await database.query(
     `SELECT id,merchant_id,name,key_prefix,created_at,expires_at,revoked_at,last_used_at,created_by
-     FROM public.partner_api_credentials WHERE merchant_id=$1 ORDER BY created_at DESC`,
-    [merchantId]
+     FROM public.partner_api_credentials ORDER BY created_at DESC`
   );
   return rows;
 }
@@ -337,14 +344,20 @@ async function createWebhookEndpoint({ merchantId, url, secretEncrypted, events 
 }
 
 async function getWebhookEndpoints(merchantId) {
+  if (merchantId) {
+    const { rows } = await database.query(
+      `SELECT * FROM public.partner_webhook_endpoints WHERE merchant_id=$1 AND is_active=true ORDER BY created_at`,
+      [merchantId]
+    );
+    return rows;
+  }
   const { rows } = await database.query(
-    `SELECT * FROM public.partner_webhook_endpoints WHERE merchant_id=$1 AND is_active=true ORDER BY created_at`,
-    [merchantId]
+    `SELECT * FROM public.partner_webhook_endpoints WHERE is_active=true ORDER BY created_at`
   );
   return rows;
 }
 
-async function updateWebhookEndpoint(endpointId, { url, secretEncrypted, events, isActive }) {
+async function updateWebhookEndpoint(endpointId, merchantId, { url, secretEncrypted, events, isActive }) {
   const sets = [];
   const vals = [];
   let idx = 1;
@@ -353,6 +366,14 @@ async function updateWebhookEndpoint(endpointId, { url, secretEncrypted, events,
   if (events !== undefined) { sets.push(`events=$${idx++}`); vals.push(events); }
   if (isActive !== undefined) { sets.push(`is_active=$${idx++}`); vals.push(isActive); }
   sets.push(`updated_at=now()`);
+  if (merchantId) {
+    vals.push(endpointId, merchantId);
+    const { rows } = await database.query(
+      `UPDATE public.partner_webhook_endpoints SET ${sets.join(',')} WHERE id=$${idx} AND merchant_id=$${idx+1} RETURNING *`,
+      vals
+    );
+    return rows[0] || null;
+  }
   vals.push(endpointId);
   if (sets.length === 1) return null; // only updated_at
   const { rows } = await database.query(
@@ -363,11 +384,46 @@ async function updateWebhookEndpoint(endpointId, { url, secretEncrypted, events,
 }
 
 async function deleteWebhookEndpoint(endpointId, merchantId) {
+  if (merchantId) {
+    const { rowCount } = await database.query(
+      `DELETE FROM public.partner_webhook_endpoints WHERE id=$1 AND merchant_id=$2`,
+      [endpointId, merchantId]
+    );
+    return rowCount > 0;
+  }
   const { rowCount } = await database.query(
-    `DELETE FROM public.partner_webhook_endpoints WHERE id=$1 AND merchant_id=$2`,
-    [endpointId, merchantId]
+    `DELETE FROM public.partner_webhook_endpoints WHERE id=$1`,
+    [endpointId]
   );
   return rowCount > 0;
+}
+
+async function getWebhookDeliveries(endpointId, merchantId, limit = 50, offset = 0) {
+  if (merchantId) {
+    const { rows } = await database.query(
+      `SELECT wd.id, wd.event_type, wd.delivery_id, wd.payload, wd.sequence,
+              wd.attempt, wd.next_attempt_at, wd.last_status, wd.last_error,
+              wd.completed_at, wd.created_at
+       FROM public.partner_webhook_deliveries wd
+       JOIN public.partner_webhook_endpoints we ON we.id=wd.endpoint_id
+       WHERE wd.endpoint_id=$1 AND we.merchant_id=$2
+       ORDER BY wd.created_at DESC
+       LIMIT $3 OFFSET $4`,
+      [endpointId, merchantId, limit, offset]
+    );
+    return rows;
+  }
+  const { rows } = await database.query(
+    `SELECT wd.id, wd.event_type, wd.delivery_id, wd.payload, wd.sequence,
+            wd.attempt, wd.next_attempt_at, wd.last_status, wd.last_error,
+            wd.completed_at, wd.created_at
+     FROM public.partner_webhook_deliveries wd
+     WHERE wd.endpoint_id=$1
+     ORDER BY wd.created_at DESC
+     LIMIT $2 OFFSET $3`,
+    [endpointId, limit, offset]
+  );
+  return rows;
 }
 
 async function enqueueWebhookDelivery({ endpointId, eventType, deliveryId, payload, sequence }) {
@@ -490,6 +546,7 @@ module.exports = {
   getWebhookEndpoints,
   updateWebhookEndpoint,
   deleteWebhookEndpoint,
+  getWebhookDeliveries,
   enqueueWebhookDelivery,
   getPendingWebhookDeliveries,
   updateWebhookDeliveryAttempt,

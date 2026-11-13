@@ -21,6 +21,7 @@ const food = require('../controllers/food/adminFoodController');
 const hours = require('../controllers/merchantHoursController');
 const errors = require('../controllers/adminErrorsController');
 const supers = require('../controllers/adminAdminsController');
+const adminPartner = require('./adminPartner');
 
 // Opening-hours payloads. The windows themselves are validated in
 // lib/merchantHours.js — this only keeps the shape sane before it gets there.
@@ -31,6 +32,8 @@ const ACCEPTING_BODY = { accepting_orders: { type: 'boolean', required: true } }
 
 // Every admin route requires an authenticated admin (Supabase JWT, role admin).
 router.use(requireAdmin);
+
+router.use('/partner', adminPartner);
 
 router.get('/stats', getStats);
 router.get('/reports', getReports);

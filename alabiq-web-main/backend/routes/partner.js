@@ -11,6 +11,18 @@ const {
   cancelDelivery,
   updatePreparation,
   rotateTrackingToken,
+  // Credentials
+  listCredentials,
+  createCredential,
+  revokeCredential,
+  rotateCredential,
+  // Webhook endpoints
+  listWebhookEndpoints,
+  createWebhookEndpoint,
+  updateWebhookEndpoint,
+  deleteWebhookEndpoint,
+  getWebhookDeliveries,
+  replayWebhookDelivery,
 } = require('../controllers/partner/deliveriesController');
 
 // Rate limiter for partner API
@@ -119,5 +131,30 @@ router.post(
 );
 
 router.post('/deliveries/:id/tracking-token/rotate', rotateTrackingToken);
+
+// --- Credentials ---
+router.get('/credentials', listCredentials);
+router.post('/credentials', validateBody({
+  name: { type: 'string', required: true, maxLength: 100 },
+  expires_at: { type: 'string', maxLength: 50, nullable: true },
+}), createCredential);
+router.post('/credentials/:id/revoke', revokeCredential);
+router.post('/credentials/:id/rotate', rotateCredential);
+
+// --- Webhook Endpoints ---
+router.get('/webhook-endpoints', listWebhookEndpoints);
+router.post('/webhook-endpoints', validateBody({
+  url: { type: 'string', required: true, maxLength: 500 },
+  events: { type: 'array', items: { type: 'string' }, nullable: true },
+  is_active: { type: 'boolean', nullable: true },
+}), createWebhookEndpoint);
+router.patch('/webhook-endpoints/:id', validateBody({
+  url: { type: 'string', maxLength: 500, nullable: true },
+  events: { type: 'array', items: { type: 'string' }, nullable: true },
+  is_active: { type: 'boolean', nullable: true },
+}), updateWebhookEndpoint);
+router.delete('/webhook-endpoints/:id', deleteWebhookEndpoint);
+router.get('/webhook-endpoints/:id/deliveries', getWebhookDeliveries);
+router.post('/webhook-endpoints/:id/deliveries/:deliveryId/replay', replayWebhookDelivery);
 
 module.exports = router;

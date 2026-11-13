@@ -707,4 +707,24 @@ export const api = {
     request(`/api/admin/users/${id}/reactivate`, { method: 'POST' }),
   adminResetUserPassword: (id) =>
     request(`/api/admin/users/${id}/password`, { method: 'POST' }),
+
+  // --- Admin Partner API (Integrations) ---
+  adminPartnerCredentials: () => request('/api/admin/partner/credentials'),
+  adminPartnerCreateCredential: (body) => request('/api/admin/partner/credentials', { method: 'POST', body }),
+  adminPartnerRevokeCredential: (id) => request(`/api/admin/partner/credentials/${id}/revoke`, { method: 'POST' }),
+  adminPartnerRotateCredential: (id) => request(`/api/admin/partner/credentials/${id}/rotate`, { method: 'POST' }),
+  adminPartnerWebhookEndpoints: () => request('/api/admin/partner/webhook-endpoints'),
+  adminPartnerCreateWebhookEndpoint: (body) => request('/api/admin/partner/webhook-endpoints', { method: 'POST', body }),
+  adminPartnerUpdateWebhookEndpoint: (id, body) => request(`/api/admin/partner/webhook-endpoints/${id}`, { method: 'PATCH', body }),
+  adminPartnerDeleteWebhookEndpoint: (id) => request(`/api/admin/partner/webhook-endpoints/${id}`, { method: 'DELETE' }),
+  adminPartnerWebhookDeliveries: (endpointId, params = {}) => {
+    const query = new URLSearchParams();
+    if (params.limit) query.set('limit', params.limit);
+    if (params.offset) query.set('offset', params.offset);
+    const qs = query.toString();
+    return request(`/api/admin/partner/webhook-endpoints/${endpointId}/deliveries${qs ? `?${qs}` : ''}`);
+  },
+  adminPartnerReplayWebhookDelivery: (endpointId, deliveryId) =>
+    request(`/api/admin/partner/webhook-endpoints/${endpointId}/deliveries/${deliveryId}/replay`, { method: 'POST' }),
 };
+EOF
