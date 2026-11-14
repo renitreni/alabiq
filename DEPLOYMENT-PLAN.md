@@ -145,6 +145,29 @@ New checkout at `/opt/SmartMappiaa/alabiq-docker` (old checkout left untouched f
 
 ## 10. Implementation log
 
+### 2026-11-14 — Push-to-deploy: post-receive hook on the bare repo ✅
+
+Pushing to branch `full` on `root@187.127.100.178:/opt/SmartMappiaa/smartmappiaa.git` now
+**auto-deploys production** — no more manual steps. End-to-end tested (empty commit `f15ade7`).
+
+- `hooks/post-receive` in the bare repo triggers only on `refs/heads/full` (branch deletion
+  is ignored) and streams progress back to the pusher.
+- `/opt/SmartMappiaa/deploy.sh` does the 2026-11-13 deploy sequence: reset the live checkout
+  `/opt/SmartMappiaa/alabiq-docker` to the pushed sha → `docker compose -p smartmappia-web-main
+  build api worker migrate frontend` → run migrations (`run --rm migrate`, idempotent) →
+  `up -d` → wait for `127.0.0.1:4001/api/health` → swap `/var/www/alabiq` to the new dist
+  (previous dist kept at `/var/www/alabiq.old`) → external smoke checks (health 200,
+  login probe 401, port 4001 listener).
+- A `flock` serializes concurrent deploys; every run appends to `/var/log/alabiq-deploy.log`.
+- Safe-fail: if the API never becomes healthy, the web root is left untouched; if the copied
+  dist lacks `index.html`, the swap is aborted.
+- Rollback: reset `full` (or the checkout) to the last good sha and push / run
+  `/opt/SmartMappiaa/deploy.sh`; restore `/var/www/alabiq.old` if needed.
+- Canonical copies of both scripts live in the repo at `deploy/post-receive` and
+  `deploy/server-deploy.sh` (uploaded to the server by hand — the bare repo does not track them).
+
+---
+
 ### Incident 2026-10-22 — login down: "Network error: could not reach the server"
 
 **Symptom:** `alabiq.com/login` showed *"Network error: could not reach the server"* for all users; `POST https://api.alabiq.com/api/auth/login` returned **502** in ~0.2 s.

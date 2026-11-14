@@ -190,7 +190,11 @@ npm run reset:orders · delete:account
   old PAT-bearing remotes are gone from this clone.
 - Deploy conduit: server bare repo `root@187.127.100.178:/opt/SmartMappiaa/smartmappiaa.git`,
   branch `full` (**force-push** — unrelated histories), consumed by the live
-  checkout per DEPLOYMENT-PLAN.md (2026-11-13 entry).
+  checkout per DEPLOYMENT-PLAN.md (2026-11-13 entry). **Push-to-deploy is live
+  (2026-11-14):** any push to `full` fires the bare repo's `post-receive` hook →
+  `/opt/SmartMappiaa/deploy.sh` (build api/worker/migrate/frontend, migrate, up -d,
+  health-check, swap `/var/www/alabiq`). Scripts: `deploy/post-receive` +
+  `deploy/server-deploy.sh`; log: `/var/log/alabiq-deploy.log`.
 - Active branches: `feat-restaurant-delivery-api` (current), `main`.
 - Recent work: Phase 7 (2026-11-13) — partner item-pricing validation +
   migrations 0010–0011, `payment_method 'external'`, `delivery_quotes.distance_km`,

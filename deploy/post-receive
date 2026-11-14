@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# post-receive hook for the deploy bare repo
+# (/opt/SmartMappiaa/smartmappiaa.git/hooks/post-receive).
+#
+# Whenever the deploy branch is pushed (including force-push), run the
+# production deploy. Push command from any clone:
+#   git push --force root@187.127.100.178:/opt/SmartMappiaa/smartmappiaa.git <branch>:refs/heads/full
+set -u
+
+DEPLOY_REF="refs/heads/full"
+ZERO="0000000000000000000000000000000000000000"
+
+while read -r oldrev newrev refname; do
+  [ "$refname" = "$DEPLOY_REF" ] || continue
+
+  if [ "$newrev" = "$ZERO" ]; then
+    echo "==> $DEPLOY_REF was deleted — skipping deploy"
+    continue
+  fi
+
+  echo "==> push to $DEPLOY_REF detected ($newrev) — starting production deploy..."
+  if /opt/SmartMappiaa/deploy.sh; then
+    echo "==> DEPLOY OK ($newrev)"
+  else
+    echo "==> DEPLOY FAILED — check /var/log/alabiq-deploy.log on the server"
+  fi
+done
