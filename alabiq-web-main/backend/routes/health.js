@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const database = require('../lib/database/pool');
 const { config } = require('../lib/config');
+const { version: apiVersion } = require('../package.json');
 
 // GET /api/health -> confirms the server runs and can reach PostgreSQL, Redis, and worker.
 // Deliberately minimal: this endpoint is public, so it must not disclose
@@ -52,6 +53,7 @@ router.get('/', async (req, res) => {
 
   res.status(statusCode).json({
     status: allHealthy ? 'ok' : 'degraded',
+    apiVersion,
     checks,
     time: new Date().toISOString(),
   });
