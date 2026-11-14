@@ -4,7 +4,6 @@ import Hero from "./sections/Hero";
 import AboutUs from "./sections/AboutUs";
 import Services from "./sections/Services";
 import VideoShowcase from "./sections/VideoShowcase";
-import PromoBanners from "./sections/PromoBanners";
 import HowItWorks from "./sections/HowItWorks";
 import SponsoredReel from "./sections/SponsoredReel";
 import FAQ from "./sections/FAQ";
@@ -21,7 +20,6 @@ function App() {
         <div className="hidden 2xl:block">
           <PopularNearYou />
           <Services />
-          <PromoBanners />
           <VideoShowcase />
           <HowItWorks />
           <SponsoredReel />
