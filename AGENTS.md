@@ -74,6 +74,17 @@ A Laravel 11 migration is under development in `alabiq-web-main/laravel/` to rep
 - Feature flag `SHOP_ENABLED` gated on both stacks
 - Zero-downtime cutover via nginx upstream switching
 
+### Shared-hosting deployment (2026-11-18 — second target, Laravel-only)
+
+A separate **Hostinger shared-hosting** deployment exists for the Laravel migration:
+`ssh -p 65002 u805024096@178.16.135.22`, docroot
+`/home/u805024096/domains/alabiq.yaramay.online/public_html` (whole repo uploaded).
+Apache + **MariaDB only** (no PostgreSQL/Node/Redis/MinIO) — Laravel runs on MySQL with
+file cache/sessions and sync queue. Web PHP pinned to 8.4 via `laravel/public/.htaccess`
+handler (`SetHandler application/x-lsphp84`); CLI via `/opt/alt/php84/usr/bin/php`.
+Migrations are now driver-aware (pgsql-only statements skipped on mysql). Full details:
+DEPLOYMENT-PLAN.md §10 (2026-11-18 entry).
+
 ### Production topology (DEPLOYMENT-PLAN.md §5 + 2026-11-13 entry — the current truth)
 
 ```

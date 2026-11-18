@@ -12,14 +12,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Enable pgcrypto extension (schema is a Supabase-ism; create it so fresh
-        // databases work — IF NOT EXISTS keeps existing deployments untouched)
-        DB::statement('CREATE SCHEMA IF NOT EXISTS extensions');
-        DB::statement('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions');
+        $isPg = Schema::getConnection()->getDriverName() === 'pgsql';
 
-        Schema::create('app_users', function (Blueprint $table) {
+        if ($isPg) {
+            // Enable pgcrypto extension (schema is a Supabase-ism; create it so fresh
+            // databases work — IF NOT EXISTS keeps existing deployments untouched)
+            DB::statement('CREATE SCHEMA IF NOT EXISTS extensions');
+            DB::statement('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions');
+        }
+
+        Schema::create('app_users', function (Blueprint $table) use ($isPg) {
             $table->uuid('id')->primary();
-            $table->text('email')->unique();
+            // MySQL/MariaDB cannot unique-index a TEXT column without a prefix length;
+            // the default case-insensitive collation gives CI uniqueness there anyway.
+            $isPg ? $table->text('email')->unique() : $table->string('email', 320)->unique();
             $table->text('password_hash');
             $table->timestampTz('email_verified_at')->nullable();
             $table->timestampTz('disabled_at')->nullable();
@@ -28,8 +34,10 @@ return new class extends Migration
             $table->timestampTz('updated_at')->useCurrent();
         });
 
-        // Create index for case-insensitive email lookup
-        DB::statement('CREATE UNIQUE INDEX app_users_email_lower_unique ON app_users (LOWER(email))');
+        if ($isPg) {
+            // Create index for case-insensitive email lookup
+            DB::statement('CREATE UNIQUE INDEX app_users_email_lower_unique ON app_users (LOWER(email))');
+        }
     }
 
     /**

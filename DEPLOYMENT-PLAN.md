@@ -145,6 +145,37 @@ New checkout at `/opt/SmartMappiaa/alabiq-docker` (old checkout left untouched f
 
 ## 10. Implementation log
 
+### 2026-11-18 — Shared-hosting deployment: alabiq.yaramay.online on Hostinger ✅
+
+The repo was uploaded whole (git clone layout) to a **Hostinger shared-hosting** account as a
+second deployment target for the Laravel migration. This is a fully separate environment from
+the VPS Docker stack above — no Node, no PostgreSQL, no Redis, no MinIO.
+
+- **Access:** `ssh -p 65002 u805024096@178.16.135.22` (key auth; Hostinger, `id-dci-web1784.main-hosting.eu`)
+- **Docroot:** `/home/u805024096/domains/alabiq.yaramay.online/public_html` (whole git repo lives here)
+- **Host capabilities:** Apache/LSWS + PHP 8.3 default (alt-php 8.2–8.6 available at `/opt/alt/phpXX/usr/bin/php`), **MariaDB 11.8 only** (`pdo_mysql`; no `pdo_pgsql`), Composer, no Node/Redis/psql. PHP CLI/web limits 3072 M.
+- **Database:** `u805024096_alabiq` / user `u805024096_alabiq` @ `localhost:3306` (creds in server-side `laravel/.env` only — never commit).
+
+**Setup performed:**
+1. `public_html/.htaccess` — rewrites all requests into `alabiq-web-main/laravel/public/`, blocks `.git` and env files. Same two-layer pattern as the other Laravel sites on this account (`alesnaad.site`, `alyusr.website`), which keep Laravel at docroot and rewrite into `public/`.
+2. `laravel/public/.htaccess` — standard Laravel front controller + **`SetHandler application/x-lsphp84`**: the domain default is PHP 8.3 but `composer.lock` (Symfony 8.1) requires ≥ 8.4.1, so the handler is pinned to alt-php 8.4 in `.htaccess`. **If this file is lost, the site 500s with a platform-check error.** Also added `X-XSRF-Token` header forwarding (Sanctum SPA auth), matching `asiatigertraveltour.com`.
+3. `laravel/.env` — MySQL connection, `CACHE_STORE=file`, `SESSION_DRIVER=file` (no `sessions` table in schema), `QUEUE_CONNECTION=sync`, `FEATURE_SHOP_ENABLED=false`, `APP_URL=https://alabiq.yaramay.online`. Keys still empty: SMTP, Tap, VAPID, Mapbox, `ADMIN_EMAILS`.
+4. `composer install --no-dev --optimize-autoloader` with `/opt/alt/php84/usr/bin/php` + `--ignore-platform-req=ext-pdo_pgsql` (composer.json requires pgsql, host has none). Created `bootstrap/cache` + `storage/*` (not in git). `artisan key:generate`, `config:cache`.
+5. `artisan migrate --force` — all 20 migrations applied to MariaDB.
+
+**Code fixes required for MySQL portability / runtime (applied in repo, synced to host):**
+- `migrations 000001/000003` — driver-aware: `CREATE SCHEMA/EXTENSION` + functional `LOWER(email)` index + `gen_random_uuid()` default are pgsql-only, now skipped on mysql; `email`/`public_hash` use `varchar` on mysql (TEXT can't take a unique index). On MySQL the app must supply `merchants.public_hash` on insert (no DB default).
+- `migration 000012` — explicit index name `bg_jobs_poll_idx` (MariaDB caps index identifiers at 64 chars).
+- `app/Providers/RouteServiceProvider.php` — `Limit::decayMinutes()` was removed in the installed framework; folded the decay into `Limit::perMinute($limit, $decay/60)`.
+- `bootstrap/app.php` — registered the middleware aliases the routes reference (`auth`, `admin`, `driver`, `driver.approved`, `merchant`, `merchant.vertical`, `feature`, `food.auth`, `partner.auth`, `idempotency`); without them every guarded route 500s with `Target class [x] does not exist`.
+- `laravel/public/.htaccess` added to the repo (was missing entirely — both locally and on host).
+
+**Verified:** `/api/health` returns JSON (`db: connected`; `status: degraded` + 503 because Redis is absent — expected on this host), auth-protected routes reach the middleware stack, HTTPS + HTTP→HTTPS working.
+
+**Known gaps on this environment:** no Redis (cache/queue downgraded to file/sync), no MinIO/S3 (payment-proof and media storage unconfigured), no realtime channel, no SMTP (password reset fails), `GET /api/food/restaurants` still 500s — the Phase-B controller assumes an `App\Models\Rating` aggregate table that was never ported (Express aggregates the per-order `ratings` table on the fly), and its `ILIKE` search is pgsql-only. Frontend not deployed here (no Node); only the Laravel API runs.
+
+---
+
 ### 2026-11-14 — Push-to-deploy: post-receive hook on the bare repo ✅
 
 Pushing to branch `full` on `root@187.127.100.178:/opt/SmartMappiaa/smartmappiaa.git` now

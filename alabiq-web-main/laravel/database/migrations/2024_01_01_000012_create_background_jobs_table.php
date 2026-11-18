@@ -24,7 +24,8 @@ return new class extends Migration
             $table->text('error')->nullable();
             $table->timestampTz('created_at')->useCurrent();
 
-            $table->index(['kind', 'completed_at', 'run_at', 'lease_owner', 'lease_expires_at']);
+            // Explicit name: MariaDB/MySQL cap index identifiers at 64 chars.
+            $table->index(['kind', 'completed_at', 'run_at', 'lease_owner', 'lease_expires_at'], 'bg_jobs_poll_idx');
         });
     }
 

@@ -12,7 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('merchants', function (Blueprint $table) {
+        $isPg = Schema::getConnection()->getDriverName() === 'pgsql';
+
+        Schema::create('merchants', function (Blueprint $table) use ($isPg) {
             $table->uuid('id')->primary();
             $table->uuid('owner_id')->nullable();
             $table->unique('owner_id');
@@ -35,15 +37,19 @@ return new class extends Migration
             $table->decimal('credit_used', 14, 2)->default(0);
             $table->boolean('is_featured')->default(false);
             $table->text('badge')->nullable();
-            $table->text('public_hash')->nullable()->unique();
+            // MySQL/MariaDB cannot unique-index TEXT; 32 chars fits the 12-hex hash.
+            $isPg ? $table->text('public_hash')->nullable()->unique() : $table->string('public_hash', 32)->nullable()->unique();
             $table->text('brand_color')->nullable();
             $table->timestampTz('created_at')->useCurrent();
         });
 
         // One restaurant, one app: 12 hex chars from a fresh uuid per row.
         // Mirrors backend/migrations/postgres/0012_merchant_public_hash.sql.
-        DB::statement("ALTER TABLE merchants ALTER COLUMN public_hash SET DEFAULT substr(lower(replace(gen_random_uuid()::text, '-', '')), 1, 12)");
-        DB::statement("ALTER TABLE merchants ALTER COLUMN public_hash SET NOT NULL");
+        // PostgreSQL only — on MySQL the app must supply public_hash on insert.
+        if ($isPg) {
+            DB::statement("ALTER TABLE merchants ALTER COLUMN public_hash SET DEFAULT substr(lower(replace(gen_random_uuid()::text, '-', '')), 1, 12)");
+            DB::statement("ALTER TABLE merchants ALTER COLUMN public_hash SET NOT NULL");
+        }
 
         DB::statement("ALTER TABLE merchants ADD CONSTRAINT merchants_vertical_check CHECK (vertical IN ('food','shop'))");
         DB::statement("ALTER TABLE merchants ADD CONSTRAINT merchants_status_check CHECK (status IN ('active','suspended','pending','rejected'))");

@@ -18,3 +18,9 @@ yarn-error.log
 /coverage
 # Build artifacts — never commit (stale manifests break provider resolution)
 /bootstrap/cache/*.php
+
+# PHPUnit cache
+.phpunit.cache/
+
+# Shared-hosting Apache handler pin (machine-local)
+public/.htaccess

@@ -38,8 +38,9 @@ class RouteServiceProvider extends ServiceProvider
 
         foreach ($limiters as $name => $config) {
             RateLimiter::for($name, function () use ($config) {
-                return \Illuminate\Cache\RateLimiting\Limit::perMinute($config['limit'])
-                    ->decayMinutes($config['decay'] / 60);
+                // perMinute()'s 2nd arg is the decay window in minutes
+                // (Limit::decayMinutes() was removed in newer framework versions).
+                return \Illuminate\Cache\RateLimiting\Limit::perMinute($config['limit'], $config['decay'] / 60);
             });
         }
     }

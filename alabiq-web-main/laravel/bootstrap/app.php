@@ -43,6 +43,18 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\TrustProxy::class,
         ]);
         $middleware->throttleApi();
+        $middleware->alias([
+            'auth' => \App\Http\Middleware\Authenticate::class,
+            'admin' => \App\Http\Middleware\RequireAdmin::class,
+            'driver' => \App\Http\Middleware\RequireDriver::class,
+            'driver.approved' => \App\Http\Middleware\RequireApprovedDriver::class,
+            'merchant' => \App\Http\Middleware\RequireMerchant::class,
+            'merchant.vertical' => \App\Http\Middleware\RequireMerchantVertical::class,
+            'feature' => \App\Http\Middleware\FeatureFlag::class,
+            'food.auth' => \App\Http\Middleware\FoodAuth::class,
+            'partner.auth' => \App\Http\Middleware\PartnerAuth::class,
+            'idempotency' => \App\Http\Middleware\Idempotency::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->renderable(function (\Illuminate\Validation\ValidationException $e) {
