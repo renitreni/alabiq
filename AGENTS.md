@@ -6,9 +6,11 @@
 >
 > **⚠ 2026-11-19 — structural migration in progress (branch `feat/full-laravel`):**
 > `alabiq-web-main/` is now the Laravel 11 app root (the `laravel/` subdir is gone —
-> its contents moved up one level). The Node `backend/` and React `frontend/` are
-> parked in `archive/full-laravel-migration/` and will be deleted after the Blade
-> port (Phase 3). `alabiq-web-main/mobile/` holds the extracted Capacitor projects.
+> its contents moved up one level). The Node `backend/`, React `frontend/`, Node
+> realtime SSE service, and the Capacitor mobile apps (incl. the iOS CI workflow)
+> are removed; backend/frontend source is parked in `archive/full-laravel-migration/`
+> and will be deleted after the Blade port (Phase 3). **Realtime is pusher.com**
+> (`BROADCAST_CONNECTION=pusher`, `PUSHER_APP_*` in `.env`).
 > Sections below still describe the old three-part layout until Phase 4 rewrites
 > them — trust `alabiq-web-main/DOCKER.md` and `PLAN-full-laravel.md` for the new truth.
 

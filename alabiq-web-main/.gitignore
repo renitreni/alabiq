@@ -9,6 +9,10 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+!/storage/framework/*/.gitignore
 /vendor
 .env
 .env.backup
@@ -43,3 +47,7 @@ compose.env
 *.log
 .DS_Store
 *.sw?
+
+# Laravel bootstrap cache
+/bootstrap/cache/*.php
+!.gitignore

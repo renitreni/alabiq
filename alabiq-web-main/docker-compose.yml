@@ -1,10 +1,10 @@
 # Alabiq — full-Laravel stack.
-# Replaces the former Node api/worker/migrate/seed services + React frontend
-# container (see archive/full-laravel-migration/ and PLAN-full-laravel.md).
+# Replaces the former Node api/worker/migrate/seed services, React frontend
+# container, and Node realtime SSE service (see archive/full-laravel-migration/
+# and PLAN-full-laravel.md). Realtime is pusher.com (BROADCAST_CONNECTION=pusher).
 #
-# Services: postgres, redis, minio, realtime (Node SSE, kept until Reverb),
-# migrate + seed-reference (one-shot artisan), app (php-fpm), web (nginx),
-# queue-worker, scheduler.
+# Services: postgres, redis, minio, migrate + seed-reference (one-shot artisan),
+# app (php-fpm), web (nginx), queue-worker, scheduler.
 services:
   postgres:
     image: postgres:16-alpine
@@ -55,23 +55,6 @@ services:
       timeout: 5s
       retries: 12
       start_period: 10s
-    networks: [app]
-
-  realtime:
-    build: ./realtime
-    restart: unless-stopped
-    environment:
-      PORT: 4100
-      REDIS_URL: redis://redis:6379
-      REALTIME_PUBLISH_TOKEN: ${REALTIME_PUBLISH_TOKEN:?Set REALTIME_PUBLISH_TOKEN in .env}
-    depends_on:
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4100/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 10s
-      timeout: 3s
-      retries: 10
     networks: [app]
 
   migrate:
@@ -136,8 +119,7 @@ services:
       QUEUE_CONNECTION: redis
       CACHE_STORE: redis
       SESSION_DRIVER: file
-      REALTIME_INTERNAL_URL: http://realtime:4100
-      REALTIME_PUBLISH_TOKEN: ${REALTIME_PUBLISH_TOKEN:?Set REALTIME_PUBLISH_TOKEN in .env}
+      BROADCAST_CONNECTION: pusher
       OBJECT_STORAGE_ENDPOINT: http://minio:9000
       OBJECT_STORAGE_REGION: us-east-1
       OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-alabiq}
@@ -158,8 +140,6 @@ services:
         condition: service_completed_successfully
       seed-reference:
         condition: service_completed_successfully
-      realtime:
-        condition: service_healthy
       minio:
         condition: service_healthy
     expose: ["9000"]
@@ -189,8 +169,7 @@ services:
         condition: service_healthy
     ports:
       - "${WEB_PORT:-8080}:8080"
-      # Host-side alias preserved for the SSE-safe nginx block in prod
-      # (DEPLOYMENT-PLAN.md §5 topology: /api/ → 127.0.0.1:4001).
+      # Host-side alias for the prod nginx upstream (DEPLOYMENT-PLAN.md §5).
       - "127.0.0.1:4001:8080"
     networks: [app]
     healthcheck:

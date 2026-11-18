@@ -7,18 +7,19 @@
     "prefer-stable": true,
     "require": {
         "php": "^8.2",
-        "laravel/framework": "^11.0",
-        "doctrine/dbal": "^3.8",
-        "vlucas/phpdotenv": "^5.6",
         "ext-bcmath": "*",
+        "ext-gmp": "*",
         "ext-pdo_pgsql": "*",
         "ext-redis": "*",
-        "ext-gmp": "*",
-        "guzzlehttp/guzzle": "^7.8",
         "aws/aws-sdk-php": "^3.300",
+        "doctrine/dbal": "^3.8",
+        "guzzlehttp/guzzle": "^7.8",
+        "laravel/framework": "^11.0",
         "minishlink/web-push": "^8.0",
         "paragonie/constant_time_encoding": "^2.6",
-        "paragonie/sodium_compat": "^1.20"
+        "paragonie/sodium_compat": "^1.20",
+        "pusher/pusher-php-server": "^7.2",
+        "vlucas/phpdotenv": "^5.6"
     },
     "require-dev": {
         "laravel/pint": "^1.16",

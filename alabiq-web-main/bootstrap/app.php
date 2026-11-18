@@ -42,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         __DIR__.'/../routes/console.php',
     ])
+    ->withBroadcasting(base_path('routes/channels.php'))
     ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
         // Dispatch sweeper - runs every 30 seconds
         $schedule->command('dispatch:sweep')->everyThirtySeconds();

@@ -22,11 +22,6 @@ return [
         'base_url' => 'https://api.mapbox.com',
     ],
 
-    'realtime' => [
-        'internal_url' => env('REALTIME_INTERNAL_URL', 'http://realtime:4100'),
-        'publish_token' => env('REALTIME_PUBLISH_TOKEN'),
-    ],
-
     'vapid' => [
         'public_key' => env('VAPID_PUBLIC_KEY'),
         'private_key' => env('VAPID_PRIVATE_KEY'),

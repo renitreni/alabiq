@@ -2,13 +2,15 @@
 
 The Compose stack is now **full Laravel**: an nginx `web` container serves the
 Laravel app (Blade web + `/api/*`) from `public/`, proxying PHP to the `app`
-container (php-fpm). Data services (PostgreSQL, Redis, MinIO) and the standalone
-Node `realtime` SSE service remain. Queue work runs in `queue-worker`
-(`artisan queue:work`, Redis-backed) and recurring jobs in `scheduler`
-(`artisan schedule:work`). The former Node `api`/`worker`/`frontend` services and
-the React `frontend/` were removed on branch `feat/full-laravel` — the old
-source is parked in `../archive/full-laravel-migration/` (reference for the
-Blade port, Phase 3 of `PLAN-full-laravel.md`).
+container (php-fpm). Data services (PostgreSQL, Redis, MinIO) remain. Queue work
+runs in `queue-worker` (`artisan queue:work`, Redis-backed) and recurring jobs in
+`scheduler` (`artisan schedule:work`). **Realtime is pusher.com** — the Node SSE
+`realtime` service was removed; set `PUSHER_APP_*` in `.env`
+(`BROADCAST_CONNECTION=pusher`). The former Node `api`/`worker`/`frontend`
+services, the React `frontend/`, and the Capacitor mobile apps were removed on
+branch `feat/full-laravel` — the old source is parked in
+`../archive/full-laravel-migration/` (reference for the Blade port, Phase 3 of
+`PLAN-full-laravel.md`).
 
 ## Services
 
@@ -17,7 +19,6 @@ Blade port, Phase 3 of `PLAN-full-laravel.md`).
 | `postgres` | postgres:16-alpine | Data (published `5432`) |
 | `redis` | redis:7-alpine | Cache, queue, GPS hot path |
 | `minio` | librefs | S3-compatible object storage |
-| `realtime` | `./realtime` | SSE hub (kept until Reverb) |
 | `migrate` | app image, one-shot | `artisan migrate --force` |
 | `seed-reference` | app image, one-shot | `db:seed --class=ReferenceDataSeeder` |
 | `app` | root `Dockerfile` (multi-stage: Vite assets → php-fpm) | PHP-FPM :9000 |

@@ -1,9 +1,0 @@
-{
-  "appId": "com.alabiq",
-  "appName": "Alabiq",
-  "webDir": "../public/build",
-  "ios": {
-    "scheme": "capacitor",
-    "contentInset": "always"
-  }
-}

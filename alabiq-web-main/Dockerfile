@@ -43,6 +43,12 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 RUN pecl install redis \
     && docker-php-ext-enable redis
 
+# Scrypt (App\Hashing\ScryptEngine, pure PHP, N=16384) needs headroom above the
+# 128M default for password hashing, and Zend MM arena retention across
+# requests makes unrecycled php-fpm workers grow — bound both.
+RUN echo 'memory_limit = 256M' > /usr/local/etc/php/conf.d/alabiq-memory.ini \
+    && printf '[www]\npm.max_requests = 500\n' > /usr/local/etc/php-fpm.d/zzz-alabiq.conf
+
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

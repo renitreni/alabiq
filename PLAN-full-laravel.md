@@ -11,8 +11,8 @@
 1. **A1 — Landing spot:** Laravel contents move up **one level** (`alabiq-web-main/laravel/*` → `alabiq-web-main/*`), not to the `ALABIQ` repo root. This keeps live deploy paths (`/opt/SmartMappiaa/alabiq-docker`, compose at `alabiq-web-main/`) valid.
 2. **A2 — Blade stack:** Blade + Alpine.js + Laravel's built-in Vite asset pipeline. No Livewire/Inertia initially (no new deps without sign-off; Alpine covers portal interactivity, Google Maps JS SDK covers map screens server-proxied as today).
 3. **A3 — API preserved:** `/api/*` contract stays byte-compatible for Capacitor mobile apps + partner integrations. Node services are only removed once Laravel reaches parity.
-4. **A4 — Realtime:** the standalone Node `realtime` container is **kept** for now (Laravel already exposes `/api/events` SSE via `EventsController`); Reverb port is a later, separate phase.
-5. **A5 — Mobile:** Capacitor projects currently live **inside `frontend/`** (`android/`, `ios/`, `capacitor.config`, `mobile:sync`). They must be extracted to a kept `mobile/` dir before `frontend/` is deleted, with `webDir` repointed at Laravel's `public/build`.
+4. **A4 — Realtime (AMENDED 2026-11-19):** **pusher.com now.** The Node `realtime` container is removed (service dir deleted, SSE `/api/events` endpoint and controller removed, nginx SSE block removed); `pusher/pusher-php-server` installed, `config/broadcasting.php` + `routes/channels.php` registered via `withBroadcasting()`. Private-channel auth wiring ships with the Phase 3 portal. (Supersedes the original "keep realtime until Reverb" plan.)
+5. **A5 — Mobile (AMENDED 2026-11-19):** **mobile implementation removed entirely** — the Capacitor `mobile/` dir (extracted from `frontend/`) and the `ios-build.yml` workflow are deleted. No mobile target in the full-Laravel repo. (Supersedes the original extraction plan.)
 6. **A6 — No prod touch:** all work local; deploy only when explicitly asked (per AGENTS.md §9).
 
 ## Current state (verified 2026-11-18)
@@ -92,6 +92,7 @@ ALABIQ/ (repo root)
 - **Baseline-schema gaps beyond 0008–0012:** the Express 0001 schema has tables with **no Laravel mirror at all** — `driver_locations` (live GPS fixes, PG fallback for dispatch) and `dispatch_offers` (driver offer fan-out). Porting these belongs to Phase 2.2 (dispatch parity), tracked here so it isn't lost.
 - **Executed deviations from this plan:** (1) the multi-stage Vite Dockerfile + Blade scaffold landed in Phase 1 instead of Phase 3 so the stack serves web+API from one container set and `mobile/` cap-sync has a web build; (2) the dead custom `app/Console/Kernel.php` was removed — its schedule moved to `bootstrap/app.php` `withSchedule()` and console routes load via `withCommands()` (Laravel 11); (3) local dev DB was **baselined** (all 24 migration names marked applied) because the volume was already migrated by Express 0001–0012 — the 4 delta migrations run for real only on fresh databases; (4) feature tests now run on a dedicated `alabiq_test` pgsql DB (auto-created by `tests/bootstrap.php`) instead of the unrunnable sqlite config.
 - **Fixes found along the way:** `AppUserFactory` used `bcrypt()` which the custom ScryptHasher binding breaks (now `Hash::make`); `AppSession` model had Eloquent timestamps on for a table with no `updated_at` (now `$timestamps = false`).
+- **2026-11-19 amendments (owner decision):** A4 realtime is **pusher.com now** — Node `realtime` service fully removed (dir, compose service, `/api/events` SSE controller+route, nginx SSE block); pusher package + broadcasting config + empty `routes/channels.php` in place. A5 mobile is **removed entirely** — `mobile/` and `ios-build.yml` deleted.
 
 ## Risks
 

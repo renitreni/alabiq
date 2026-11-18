@@ -25,7 +25,6 @@ use App\Http\Controllers\PublicTrackingController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\LocationsController;
 use App\Http\Controllers\RouteController;
-use App\Http\Controllers\EventsController;
 
 // Health check
 Route::get('/health', [HealthController::class, 'index']);
@@ -376,9 +375,6 @@ Route::prefix('files')->group(function () {
     Route::get('/private', [FilesController::class, 'privateDownload']);
     Route::get('/public/{bucket}/{path}', [FilesController::class, 'publicDownload'])->where('path', '.*');
 });
-
-// Events (SSE)
-Route::get('/events', [EventsController::class, 'stream'])->middleware('auth');
 
 // Locations (Mapbox)
 Route::prefix('locations')->group(function () {

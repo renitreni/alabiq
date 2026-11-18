@@ -8,6 +8,10 @@
  * Dev credentials mirror docker-compose defaults; override via TEST_DB_* env.
  */
 
+// Pure-PHP scrypt (N=16384) peaks ~40MB per hash and Zend MM retains arena
+// blocks between tests; the default 128M CLI limit OOMs the combined suite.
+ini_set('memory_limit', '512M');
+
 $host = getenv('TEST_DB_HOST') ?: '127.0.0.1';
 $port = getenv('TEST_DB_PORT') ?: '5432';
 $user = getenv('TEST_DB_USER') ?: 'alabiq';
