@@ -20,12 +20,19 @@ import DriverPage from './portal/driver/DriverPage.jsx'
 import MerchantPortal from './portal/merchant/MerchantPortal.jsx'
 import AdminPage from './portal/admin/AdminPage.jsx'
 import AdminDemoPage from './portal/admin/AdminDemoPage.jsx'
+import RestaurantDemoPage from './portal/demo/RestaurantDemoPage.jsx'
 import FoodHomePage from './portal/food/FoodHomePage.jsx'
 import RestaurantPage from './portal/food/RestaurantPage.jsx'
 import FoodCartPage from './portal/food/FoodCartPage.jsx'
 import FoodCheckoutPage from './portal/food/FoodCheckoutPage.jsx'
 import FoodTrackPage from './portal/food/FoodTrackPage.jsx'
 import FoodOrdersPage from './portal/food/FoodOrdersPage.jsx'
+import AppShell from './portal/food/AppShell.jsx'
+import AppMenuPage from './portal/food/AppMenuPage.jsx'
+import AppCartPage from './portal/food/AppCartPage.jsx'
+import AppCheckoutPage from './portal/food/AppCheckoutPage.jsx'
+import AppOrdersPage from './portal/food/AppOrdersPage.jsx'
+import AppTrackPage from './portal/food/AppTrackPage.jsx'
 import StoreHomePage from './portal/shop/StoreHomePage.jsx'
 import StorePage from './portal/shop/StorePage.jsx'
 import ShopCartPage from './portal/shop/ShopCartPage.jsx'
@@ -49,7 +56,7 @@ import { registerServiceWorker } from './portal/lib/pushNotifications.js'
 import { installAlertUnlock } from './portal/lib/alertSound.js'
 
 import { useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useParams } from 'react-router-dom'
 import { Capacitor } from '@capacitor/core'
 import { useAuth } from './portal/lib/AuthProvider.jsx'
 import { roleHome } from './portal/lib/constants.js'
@@ -66,6 +73,13 @@ if (import.meta.env.PROD) {
 // ever asked it to resume. Every driver, passenger and tracking alert was
 // therefore mute with nothing on screen to say why.
 installAlertUnlock()
+
+// /app/:hash/login hands off to the shared login page with a scoped return
+// path, so a standalone-installed window lands back inside the restaurant.
+function AppLoginRedirect() {
+  const { hash } = useParams()
+  return <Navigate to={`/login?next=${encodeURIComponent(`/app/${hash}`)}`} replace />
+}
 
 function RootRedirect() {
   const { session, role } = useAuth()
@@ -122,6 +136,9 @@ createRoot(document.getElementById('root')).render(
                 exposing real customers. Admin-only, and the fixtures are
                 pulled in on demand so they never ship in the main bundle. */}
             <Route path="/admin/ferdz" element={<RequireAuth role="admin"><AdminDemoPage /></RequireAuth>} />
+            {/* Public demo of the scoped one-restaurant app — the exact menu
+                page /app/<hash> serves, against fixture dishes. Unlisted. */}
+            <Route path="/demo/restaurant" element={<RestaurantDemoPage />} />
 
             {/* Legal — must stay public. Store reviewers open the privacy URL logged
                 out, and Play requires a deletion page reachable after uninstalling. */}
@@ -146,6 +163,19 @@ createRoot(document.getElementById('root')).render(
             <Route path="/food/checkout" element={<RequireAuth><FoodCheckoutPage /></RequireAuth>} />
             <Route path="/food/orders" element={<RequireAuth><FoodOrdersPage /></RequireAuth>} />
             <Route path="/food/track/:code" element={<RequireAuth><FoodTrackPage /></RequireAuth>} />
+
+            {/* One restaurant — one app: scoped customer PWA pinned to a single
+                restaurant by its unguessable public hash. The menu is public;
+                cart/checkout/orders/track need sign-in, and RequireAuth bounces
+                back into the scope via ?next=. */}
+            <Route path="/app/:hash" element={<AppShell />}>
+              <Route index element={<AppMenuPage />} />
+              <Route path="cart" element={<RequireAuth><AppCartPage /></RequireAuth>} />
+              <Route path="checkout" element={<RequireAuth><AppCheckoutPage /></RequireAuth>} />
+              <Route path="orders" element={<RequireAuth><AppOrdersPage /></RequireAuth>} />
+              <Route path="track/:code" element={<RequireAuth><AppTrackPage /></RequireAuth>} />
+              <Route path="login" element={<AppLoginRedirect />} />
+            </Route>
 
             {/* Ecommerce — same shape as Food: browsing is public; cart/checkout/orders need sign-in.
                 Cart and checkout carry the store id in the query string (?s=<storeId>), matching food's ?m=. */}

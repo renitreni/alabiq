@@ -31,3 +31,17 @@ test('store catalogue uses a stock-safe backend query shape for products and var
   assert.match(query.mock.calls[0].arguments[0], /jsonb_agg\(jsonb_build_object/);
   assert.deepEqual(query.mock.calls[0].arguments[1], ['merchant-1']);
 });
+
+test('merchantByPublicHash scopes by vertical and binds the hash literal', async (t) => {
+  const query = t.mock.method(database, 'query', async () => ({ rows: [{ id: 'm1' }] }));
+  const row = await repository.merchantByPublicHash('food', 'abc123def456');
+  assert.deepEqual(row, { id: 'm1' });
+  assert.match(query.mock.calls[0].arguments[0], /public_hash=\$1/);
+  assert.match(query.mock.calls[0].arguments[0], /vertical=\$2/);
+  assert.deepEqual(query.mock.calls[0].arguments[1], ['abc123def456', 'food']);
+});
+
+test('merchantByPublicHash returns null when nothing matches', async (t) => {
+  t.mock.method(database, 'query', async () => ({ rows: [] }));
+  assert.equal(await repository.merchantByPublicHash('food', 'abc123def456'), null);
+});

@@ -217,7 +217,9 @@ function RiderCard({ rider, etaMinutes }) {
   );
 }
 
-export default function FoodTrackPage() {
+// `basePath` is for the scoped one-restaurant app (/app/<hash>): back/home
+// stay inside the scope instead of jumping to the platform storefront.
+export default function FoodTrackPage({ basePath } = {}) {
   const { code } = useParams();
   const navigate = useNavigate();
   const { profile, user } = useAuth();
@@ -347,7 +349,12 @@ export default function FoodTrackPage() {
     ['accepted', 'preparing', 'ready', 'out_for_delivery'].includes(order.status);
 
   return (
-    <PortalShell title="Track your order" subtitle={code} onBack={() => navigate('/food/orders')}>
+    <PortalShell
+      title="Track your order"
+      subtitle={code}
+      home={basePath || '/food'}
+      onBack={() => navigate(basePath ? `${basePath}/orders` : '/food/orders')}
+    >
       <div className="max-w-xl mx-auto space-y-4">
         {error && !data && (
           <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium">{error}</div>

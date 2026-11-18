@@ -6,7 +6,7 @@
 // ---------------------------------------------------------------------
 const database = require('../lib/database/pool');
 
-const MERCHANT_SELECT = `id,name,cuisine_type,description,logo_url,address,street,building_number,lat,lng,
+const MERCHANT_SELECT = `id,public_hash,brand_color,name,cuisine_type,description,logo_url,address,street,building_number,lat,lng,
   is_active,status,accepting_orders,credit_limit,credit_used,is_featured,badge,owner_id,created_at`;
 const ADMIN_ITEM_SELECT = `id,category_id,name,description,price,net_price,item_type,image_url,is_available,size_options`;
 const MODERATE_ITEM_SELECT = 'id,name,price,net_price,is_available,size_options';

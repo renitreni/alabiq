@@ -35,14 +35,19 @@ const CARD_METHOD = {
   icon: CreditCard,
 };
 
-export default function FoodCheckoutPage() {
+// Props are for the scoped one-restaurant app (/app/<hash>): the merchant
+// comes from context instead of ?m=, and every link stays inside the scope.
+export default function FoodCheckoutPage({ merchantId: merchantIdProp, basePath } = {}) {
   // Card is offered only when the gateway is live; the server re-checks on
   // create, because a picker is a suggestion and a stale tab is not evidence.
   const cardOn = useCardAvailable();
   const payMethods = cardOn ? [...PAY_METHODS, CARD_METHOD] : PAY_METHODS;
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const merchantId = params.get('m');
+  const merchantId = merchantIdProp || params.get('m');
+  const menuPath = basePath || `/food/r/${merchantId}`;
+  const cartPath = basePath ? `${basePath}/cart` : `/food/cart?m=${merchantId}`;
+  const trackPath = (code) => (basePath ? `${basePath}/track/${code}` : `/food/track/${code}`);
   const { profile } = useAuth();
 
   const [cart, setCart] = useState(null);
@@ -117,12 +122,12 @@ export default function FoodCheckoutPage() {
   // Step 2 — the order exists; collect the payment.
   if (placedCode) {
     return (
-      <PortalShell title="Payment" subtitle={placedCode} onBack={() => navigate(`/food/track/${placedCode}`)}>
+      <PortalShell title="Payment" subtitle={placedCode} home={menuPath} onBack={() => navigate(trackPath(placedCode))}>
         <div className="max-w-xl mx-auto space-y-4">
-          <PaymentPanel code={placedCode} onPaid={() => navigate(`/food/track/${placedCode}`)} />
+          <PaymentPanel code={placedCode} onPaid={() => navigate(trackPath(placedCode))} />
           <button
             type="button"
-            onClick={() => navigate(`/food/track/${placedCode}`)}
+            onClick={() => navigate(trackPath(placedCode))}
             className={btnGhost + ' w-full'}
           >
             Pay later — track my order <ArrowRight className="w-4 h-4" />
@@ -135,7 +140,7 @@ export default function FoodCheckoutPage() {
   const items = cart?.items || [];
 
   return (
-    <PortalShell title="Checkout" onBack={() => navigate(`/food/cart?m=${merchantId}`)}>
+    <PortalShell title="Checkout" home={menuPath} onBack={() => navigate(cartPath)}>
       <div className="max-w-xl mx-auto space-y-4">
         {loadErr && (
           <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium">{loadErr}</div>
@@ -148,7 +153,7 @@ export default function FoodCheckoutPage() {
           <Card className="p-10 text-center">
             <p className="font-bold text-brand-dark">Your cart is empty</p>
             <p className="text-sm text-brand-grey mt-1 mb-4">Add items before checking out.</p>
-            <Link to={`/food/r/${merchantId}`} className={btnPrimary}>Back to the menu</Link>
+            <Link to={menuPath} className={btnPrimary}>Back to the menu</Link>
           </Card>
         )}
 
@@ -162,7 +167,7 @@ export default function FoodCheckoutPage() {
                   <p className="font-bold text-amber-800">
                     Add {fmtSAR(cart.shortfall)} more to reach the {fmtSAR(cart.minOrder)} minimum.
                   </p>
-                  <Link to={`/food/r/${merchantId}`} className="text-amber-700 underline font-medium">
+                  <Link to={menuPath} className="text-amber-700 underline font-medium">
                     Back to the menu
                   </Link>
                 </div>

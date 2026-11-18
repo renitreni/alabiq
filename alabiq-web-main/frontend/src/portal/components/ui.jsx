@@ -88,7 +88,10 @@ export function UserMenu() {
   );
 }
 
-export function PortalShell({ title, subtitle, right, onBack, children, wide = false, compact = false }) {
+// `home` is where the logo link points — the scoped one-restaurant app
+// (/app/<hash>) passes its base path so an installed window never falls
+// out to the platform storefront.
+export function PortalShell({ title, subtitle, right, onBack, children, wide = false, compact = false, home = '/' }) {
   const { user } = useAuth();
   return (
     <div className="min-h-screen bg-brand-muted">
@@ -104,7 +107,7 @@ export function PortalShell({ title, subtitle, right, onBack, children, wide = f
                 <ArrowLeft className="w-5 h-5" />
               </button>
             )}
-            <Link to="/" className="flex items-center gap-2">
+            <Link to={home} className="flex items-center gap-2">
               <img src="/alabiq-icon.png" alt="Alabiq" className="w-9 h-9 object-contain" />
               <span className="font-black tracking-tight text-brand-black hidden sm:block">
                 ALA<span className="text-brand-orange">BIQ</span>

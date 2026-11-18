@@ -357,6 +357,7 @@ function foodMerchants() {
       isActive: m.is_active,
       status: m.status,
       acceptingOrders: m.accepting_orders !== false,
+      publicHash: m.public_hash,
       creditLimit: m.credit_limit,
       creditUsed: round2(m.credit_used),
       isFeatured: m.is_featured,
@@ -584,6 +585,55 @@ const DEFAULT_HOURS = [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({
   closes_at: '23:00',
 }));
 
+// --- food: scoped customer app (/app/<hash>) demo ---------------------------
+// Same detail payload shape loadRestaurantDetail serves in production,
+// built from the fixture menu so the demo app is pixel-close to the real
+// scoped app. The "demo" hash prefix is what keeps the interception honest:
+// /app/demo* URLs can only ever resolve to fixture restaurants.
+function foodRestaurantDetail(merchant) {
+  const menu = store.menusByMerchant.get(merchant.id) || { categories: [], items: [] };
+  return {
+    restaurant: {
+      id: merchant.id,
+      public_hash: merchant.public_hash,
+      brand_color: merchant.brand_color,
+      name: merchant.name,
+      cuisine_type: merchant.cuisine_type,
+      description: merchant.description,
+      logo_url: merchant.logo_url,
+      address: merchant.address,
+      street: merchant.street,
+      building_number: merchant.building_number,
+      lat: merchant.lat,
+      lng: merchant.lng,
+      service_radius_km: 15,
+      is_featured: merchant.is_featured,
+      badge: merchant.badge,
+      accepting_orders: merchant.accepting_orders,
+      acceptingOrders: merchant.accepting_orders !== false,
+      isOpen: true,
+      hours: DEFAULT_HOURS.map((h) => ({ ...h })),
+    },
+    categories: menu.categories,
+    items: menu.items,
+    deliveryFee: 10,
+    delivery: { freeRadiusKm: 15, surchargePerKm: 0.25, maxRadiusKm: 50 },
+    minOrder: 30,
+  };
+}
+
+function foodRestaurantByHash(hash) {
+  const merchant = store.restaurants.find((m) => m.public_hash === hash && m.status !== 'suspended');
+  if (!merchant) return { __status: 404, error: 'Restaurant not found or no longer listed' };
+  return foodRestaurantDetail(merchant);
+}
+
+function foodRestaurantById(id) {
+  const merchant = store.restaurants.find((m) => m.id === id && m.status !== 'suspended');
+  if (!merchant) return { __status: 404, error: 'Restaurant not found or no longer listed' };
+  return foodRestaurantDetail(merchant);
+}
+
 // --- mutations --------------------------------------------------------
 // Only the ones an operator would actually click during a demo. Everything
 // else falls through to a generic ok, which is enough for the UI to refetch.
@@ -703,6 +753,8 @@ const ROUTES = [
     store.menusByMerchant.get(m[1]) || { __status: 404, error: 'Merchant not found' }],
   ['GET', /^\/api\/admin\/food\/merchants\/([^/]+)\/hours$/, () => ({ acceptingOrders: true, hours: DEFAULT_HOURS })],
   ['GET', /^\/api\/admin\/food\/orders$/, (p) => foodOrders(p)],
+  ['GET', /^\/api\/food\/restaurants\/hash\/([^/]+)$/, (p, m) => foodRestaurantByHash(m[1])],
+  ['GET', /^\/api\/food\/restaurants\/([^/]+)$/, (p, m) => foodRestaurantById(m[1])],
   ['GET', /^\/api\/admin\/food\/orders\/([^/]+)\/photos$/, () => ({ pickup: null, delivery: null })],
   ['POST', /^\/api\/admin\/food\/orders\/([^/]+)\/accept$/, (p, m) =>
     setFoodOrder(m[1], { status: 'accepted', acceptedAt: new Date().toISOString() })],

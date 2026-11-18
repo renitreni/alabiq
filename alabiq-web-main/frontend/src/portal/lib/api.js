@@ -17,11 +17,15 @@ async function authHeader() {
 // Pass { silent: true } for background/polling calls so a transient failure
 // doesn't fire a popup every few seconds. All other errors show one via Swal.
 async function request(path, { method = 'GET', body, headers = {}, silent = false } = {}) {
-  // /admin/ferdz renders the whole admin portal against invented data. The
-  // switch is the URL, not a flag: a flag set on mount outlives an unmount
-  // that never runs and would leak fake numbers into the live /admin. Read
-  // per call, leaving the route makes the very next call real again.
-  if (path.startsWith('/api/admin') && window.location.pathname.startsWith('/admin/ferdz')) {
+  // /admin/ferdz renders the whole admin portal against invented data; /demo/*
+  // and /app/demo* do the same for the demo restaurant landing page and its
+  // scoped customer app. The switch is the URL, not a flag: a flag set on
+  // mount outlives an unmount that never runs and would leak fake numbers into
+  // the live app. Read per call, leaving the route makes the very next call
+  // real again.
+  const demoAdmin = path.startsWith('/api/admin') && window.location.pathname.startsWith('/admin/ferdz');
+  const demoFood = path.startsWith('/api/food') && (window.location.pathname.startsWith('/demo') || window.location.pathname.startsWith('/app/demo'));
+  if (demoAdmin || demoFood) {
     const { resolveDemo } = await import('../demo/demoApi');
     try {
       return await resolveDemo(path, method, body);
@@ -298,6 +302,9 @@ export const api = {
   // --- food delivery: customer ---
   foodRestaurants: (params = '') => request(`/api/food/restaurants${params}`, { silent: true }),
   foodRestaurant: (id) => request(`/api/food/restaurants/${id}`, { silent: true }),
+  // Scoped one-restaurant customer app (/app/<hash>): same detail payload as
+  // foodRestaurant, addressed by the restaurant's unguessable public hash.
+  foodRestaurantByHash: (hash) => request(`/api/food/restaurants/hash/${hash}`, { silent: true }),
   foodCart: (merchantId) => request(`/api/food/cart?merchant_id=${encodeURIComponent(merchantId)}`, { silent: true }),
   foodCartAdd: (body) => request('/api/food/cart/items', { method: 'POST', body }),
   foodCartUpdate: (id, quantity) => request(`/api/food/cart/items/${id}`, { method: 'PATCH', body: { quantity } }),

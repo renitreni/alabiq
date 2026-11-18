@@ -39,6 +39,7 @@ import {
   RefreshCw,
   FileText,
   ExternalLink,
+  Copy,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { MAX_NAME_LENGTH } from '../lib/fieldValidation';
@@ -195,6 +196,49 @@ function EmptyState({ icon: Icon, title, desc }) {
   );
 }
 
+// --- Customer app link (/app/<publicHash>) ------------------------------------
+// Every restaurant carries an unguessable public hash addressing its scoped
+// customer app. The link is safe to hand to the owner: it exposes nothing
+// beyond the public storefront.
+function RestaurantAppLink({ merchant }) {
+  const [copied, setCopied] = useState(false);
+  if (!merchant.publicHash) return null;
+  const url = `${window.location.origin}/app/${merchant.publicHash}`;
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Clipboard API needs a secure context; fall back to execCommand so
+      // the button still works on plain-HTTP dev hosts.
+      const el = document.createElement('textarea');
+      el.value = url;
+      el.style.position = 'fixed';
+      el.style.opacity = '0';
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      el.remove();
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-brand-border flex flex-wrap items-center gap-2">
+      <p className="text-xs text-brand-grey uppercase tracking-wider">Customer app</p>
+      <code className="text-xs bg-brand-surface border border-brand-border rounded-lg px-2 py-1.5 truncate max-w-full sm:max-w-md">{url}</code>
+      <button type="button" onClick={copy} className={btnGhost + ' !py-1.5 !px-2.5 !text-xs'} title="Copy app link">
+        {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+        {copied ? ' Copied' : ' Copy'}
+      </button>
+      <a href={url} target="_blank" rel="noreferrer" className={btnGhost + ' !py-1.5 !px-2.5 !text-xs'}>
+        <ExternalLink className="w-3.5 h-3.5" /> Open
+      </a>
+    </div>
+  );
+}
+
 // --- Settlement (date-range report) ----------------------------------------
 function SettlementTab({ onRefresh }) {
   const [from, setFrom] = useState(() => {
@@ -338,6 +382,9 @@ export default function FoodAdmin() {
         <button onClick={async () => { setViewingMenu(r); const menu = await api.adminFoodMerchantMenu(r.id); setViewingMenuItems(menu); }} className={btnGhost + ' !py-1.5 !px-2.5 !text-xs'} title="Menu"><Menu className="w-3.5 h-3.5" /></button>
         <button onClick={() => { setOwnerFor(r); setOwnerForm({ email: r.owner?.email || '', full_name: r.owner?.full_name || '', phone: r.owner?.mobile_number || '' }); }} className={btnGhost + ' !py-1.5 !px-2.5 !text-xs'} title="Owner"><User className="w-3.5 h-3.5" /></button>
         <button onClick={async () => { if (await confirmAction({ title: 'Replenish Credit', text: `Add credit to ${r.name}?`, confirmText: 'Replenish' })) { setBusyId(r.id); try { await api.adminFoodReplenishCredit(r.id, { amount: 300 }); notifySuccess('Credit replenished'); setTick(t => t + 1); } catch {} finally { setBusyId(null); } }}} className={btnGhost + ' !py-1.5 !px-2.5 !text-xs'} title="Credit"><Coins className="w-3.5 h-3.5" /></button>
+        {r.publicHash && (
+          <a href={`/app/${r.publicHash}`} target="_blank" rel="noreferrer" className={btnGhost + ' !py-1.5 !px-2.5 !text-xs'} title="Open customer app"><ExternalLink className="w-3.5 h-3.5" /></a>
+        )}
       </div>
     )}),
   ], []);
@@ -458,6 +505,7 @@ export default function FoodAdmin() {
         <p className="text-xs text-brand-grey uppercase tracking-wider mb-2">Address</p>
         <p className="text-sm">{formatAddressDetail(row.address, row.street, row.building_number, null, null, null)}</p>
       </div>
+      <RestaurantAppLink merchant={row} />
     </div>
   );
 

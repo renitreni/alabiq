@@ -11,7 +11,7 @@ const {
   foodEventsLimiter,
   cardChargeLimiter,
 } = require('../middleware/rateLimiters');
-const { listRestaurants, getRestaurant } = require('../controllers/food/restaurantsController');
+const { listRestaurants, getRestaurant, getRestaurantByHash, getRestaurantManifest } = require('../controllers/food/restaurantsController');
 const {
   getCart,
   addCartItem,
@@ -33,6 +33,13 @@ const { rateFoodDriver } = require('../controllers/ratingsController');
 
 // --- Discovery (public; optionalAuth only tags analytics) ---
 router.get('/restaurants', foodSearchLimiter, optionalAuth, listRestaurants);
+// Hash lookup sits above /restaurants/:id so the literal segment wins for
+// two-segment /restaurants/hash/:hash URLs (/:id only matches one segment,
+// but explicit ordering keeps the intent obvious).
+router.get('/restaurants/hash/:hash', foodSearchLimiter, optionalAuth, getRestaurantByHash);
+// PWA manifest for the scoped one-restaurant customer app (/app/<hash>).
+// Same-origin JSON consumed via <link rel="manifest"> by the app shell.
+router.get('/manifest/:hash', foodSearchLimiter, getRestaurantManifest);
 router.get('/restaurants/:id', foodSearchLimiter, optionalAuth, getRestaurant);
 
 // --- Cart (signed-in customers; server reads all prices itself) ---

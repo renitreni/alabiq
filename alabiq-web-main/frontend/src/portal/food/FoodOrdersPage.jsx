@@ -9,8 +9,12 @@ import { api } from '../lib/api';
 import { fmtSAR, foodStatusMeta, foodPaymentMeta } from '../lib/constants';
 import { PortalShell, Card, Badge, Spinner, btnPrimary, btnGhost } from '../components/ui';
 
-export default function FoodOrdersPage() {
+// `basePath` is for the scoped one-restaurant app (/app/<hash>): every exit
+// link stays inside the scope instead of jumping to the platform storefront.
+export default function FoodOrdersPage({ basePath } = {}) {
   const navigate = useNavigate();
+  const browsePath = basePath || '/food';
+  const trackPath = (code) => (basePath ? `${basePath}/track/${code}` : `/food/track/${code}`);
   const [orders, setOrders] = useState(null);
   const [error, setError] = useState(null);
 
@@ -26,7 +30,7 @@ export default function FoodOrdersPage() {
   useEffect(() => { load(); }, []);
 
   return (
-    <PortalShell title="My food orders" onBack={() => navigate('/food')}>
+    <PortalShell title="My food orders" home={browsePath} onBack={() => navigate(browsePath)}>
       <div className="max-w-2xl mx-auto space-y-3">
         {error && (
           <Card className="p-6 text-center">
@@ -47,7 +51,7 @@ export default function FoodOrdersPage() {
             <UtensilsCrossed className="w-10 h-10 text-brand-grey/40 mx-auto mb-3" />
             <p className="font-bold text-brand-dark">No orders yet</p>
             <p className="text-sm text-brand-grey mt-1 mb-4">Hungry? Your first order is a tap away.</p>
-            <Link to="/food" className={btnPrimary}>Browse restaurants</Link>
+            <Link to={browsePath} className={btnPrimary}>Browse restaurants</Link>
           </Card>
         )}
 
@@ -74,12 +78,15 @@ export default function FoodOrdersPage() {
                 <Badge tone={pay.tone}>{pay.label}</Badge>
                 <div className="ml-auto flex gap-2">
                   {order.merchants?.id && (
-                    <Link to={`/food/r/${order.merchants.id}`} className={btnGhost + ' !py-2 !px-3.5 !text-xs'}>
+                    <Link
+                      to={basePath || `/food/r/${order.merchants.id}`}
+                      className={btnGhost + ' !py-2 !px-3.5 !text-xs'}
+                    >
                       Order again
                     </Link>
                   )}
                   <Link
-                    to={`/food/track/${order.order_code}`}
+                    to={trackPath(order.order_code)}
                     className={(live ? btnPrimary : btnGhost) + ' !py-2 !px-3.5 !text-xs'}
                   >
                     {live ? 'Track' : 'View'} <ArrowRight className="w-3.5 h-3.5" />

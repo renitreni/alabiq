@@ -1,7 +1,7 @@
 'use strict';
 
 const database = require('../lib/database/pool');
-const MERCHANT_FIELDS = `id,name,cuisine_type,description,logo_url,address,lat,lng,
+const MERCHANT_FIELDS = `id,public_hash,brand_color,name,cuisine_type,description,logo_url,address,lat,lng,
   service_radius_km,is_featured,badge,accepting_orders`;
 
 async function listMerchants(vertical, { q = '', category = '', featured = false, limit = 100 } = {}) {
@@ -65,6 +65,16 @@ async function merchantById(vertical, id) {
   return result.rows[0] || null;
 }
 
+// Public-hash lookup for the scoped customer app (/app/<hash>). Same exposure
+// rules as merchantById: callers still gate on is_active/status/vertical.
+async function merchantByPublicHash(vertical, hash) {
+  const result = await database.query(
+    `SELECT ${MERCHANT_FIELDS},vertical,is_active,status FROM public.merchants
+      WHERE public_hash=$1 AND vertical=$2`, [hash, vertical],
+  );
+  return result.rows[0] || null;
+}
+
 async function menuCategories(merchantId) {
   const result = await database.query(
     `SELECT id,name,sort_order FROM public.menu_categories
@@ -95,6 +105,6 @@ async function products(merchantId) {
 }
 
 module.exports = {
-  listMerchants, cuisines, ratings, menuCounts, hours, merchantById,
+  listMerchants, cuisines, ratings, menuCounts, hours, merchantById, merchantByPublicHash,
   menuCategories, menuItems, products,
 };

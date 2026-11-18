@@ -179,6 +179,8 @@ async function listMerchants(req, res) {
 
     const merchants = (rows || []).map((m) => ({
       id: m.id,
+      publicHash: m.public_hash,
+      brandColor: m.brand_color,
       name: m.name,
       cuisineType: m.cuisine_type,
       description: m.description,

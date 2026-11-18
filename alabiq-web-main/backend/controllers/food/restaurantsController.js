@@ -1,7 +1,10 @@
 // ---------------------------------------------------------------------
 // Food Delivery — public restaurant discovery
-//   - listRestaurants : GET /api/food/restaurants?q=&cuisine=
-//   - getRestaurant   : GET /api/food/restaurants/:id
+//   - listRestaurants      : GET /api/food/restaurants?q=&cuisine=
+//   - getRestaurant        : GET /api/food/restaurants/:id
+//   - getRestaurantByHash  : GET /api/food/restaurants/hash/:hash
+//   - getRestaurantManifest: GET /api/food/manifest/:hash (PWA manifest for
+//     the scoped one-restaurant customer app at /app/<hash>)
 //
 // Public endpoints (no auth): they expose only active restaurants and
 // safe display fields. The optional bearer token is used purely to tag
@@ -84,6 +87,48 @@ async function listRestaurants(req, res) {
   }
 }
 
+// Shared payload for both id and hash lookups: opening hours merged in,
+// full menu attached, and the view_menu analytics event fired. `merchant`
+// must already be vetted (vertical/active/status) by the caller.
+async function loadRestaurantDetail(req, merchant) {
+  const merchantHours = await storefrontRepository.hours([merchant.id]);
+  Object.assign(
+    merchant,
+    publicHoursState({
+      acceptingOrders: merchant.accepting_orders,
+      hours: merchantHours || [],
+    })
+  );
+
+  const [categories, items] = await Promise.all([
+    storefrontRepository.menuCategories(merchant.id), storefrontRepository.menuItems(merchant.id),
+  ]);
+
+  // PRD analytics: view_menu fires when a restaurant profile is opened.
+  logFoodEvent({
+    eventName: 'view_menu',
+    userId: req.userId || null,
+    merchantId: merchant.id,
+    params: { restaurant_id: merchant.id, cuisine_type: merchant.cuisine_type },
+  });
+
+  const { vertical, is_active, status, ...publicMerchant } = merchant;
+  return {
+    restaurant: publicMerchant,
+    categories: categories || [],
+    items: items || [],
+    deliveryFee: config.food.deliveryFeeSar,
+    delivery: deliveryTerms(config.food.deliveryFeeSar, await getMaxDistanceKm()),
+    minOrder: config.food.minOrderSar,
+  };
+}
+
+// A shop merchant or a delisted one is a 404 — the storefront must not
+// confirm that some other kind of merchant sits at this reference.
+function isFoodListed(merchant) {
+  return merchant && merchant.vertical === 'food' && merchant.is_active && merchant.status === 'active';
+}
+
 async function getRestaurant(req, res) {
   try {
     const { id } = req.params;
@@ -93,44 +138,106 @@ async function getRestaurant(req, res) {
     // at that id, and its catalogue lives in different tables anyway.
     // Note a CLOSED restaurant is still a 200: the page renders with a banner
     // and a disabled cart, which is a different thing from being delisted.
-    if (!merchant || merchant.vertical !== 'food' || !merchant.is_active || merchant.status !== 'active') {
+    if (!isFoodListed(merchant)) {
       return res.status(404).json({ error: 'Restaurant not found or no longer listed' });
     }
 
-    const merchantHours = await storefrontRepository.hours([merchant.id]);
-    Object.assign(
-      merchant,
-      publicHoursState({
-        acceptingOrders: merchant.accepting_orders,
-        hours: merchantHours || [],
-      })
-    );
-
-    const [categories, items] = await Promise.all([
-      storefrontRepository.menuCategories(id), storefrontRepository.menuItems(id),
-    ]);
-
-    // PRD analytics: view_menu fires when a restaurant profile is opened.
-    logFoodEvent({
-      eventName: 'view_menu',
-      userId: req.userId || null,
-      merchantId: id,
-      params: { restaurant_id: id, cuisine_type: merchant.cuisine_type },
-    });
-
-    const { vertical, is_active, status, ...publicMerchant } = merchant;
-    return res.json({
-      restaurant: publicMerchant,
-      categories: categories || [],
-      items: items || [],
-      deliveryFee: config.food.deliveryFeeSar,
-      delivery: deliveryTerms(config.food.deliveryFeeSar, await getMaxDistanceKm()),
-      minOrder: config.food.minOrderSar,
-    });
+    return res.json(await loadRestaurantDetail(req, merchant));
   } catch (err) {
     console.error('getRestaurant error:', err);
     return res.status(500).json({ error: 'Unexpected server error' });
   }
 }
 
-module.exports = { listRestaurants, getRestaurant };
+// Same storefront as getRestaurant, reached by the unguessable public hash
+// that identifies the scoped one-restaurant customer app (/app/<hash>).
+async function getRestaurantByHash(req, res) {
+  try {
+    const hash = (req.params.hash || '').toString().trim();
+    if (!/^[a-z0-9]{12}$/.test(hash)) {
+      return res.status(404).json({ error: 'Restaurant not found or no longer listed' });
+    }
+    const merchant = await storefrontRepository.merchantByPublicHash('food', hash);
+    if (!isFoodListed(merchant)) {
+      return res.status(404).json({ error: 'Restaurant not found or no longer listed' });
+    }
+
+    return res.json(await loadRestaurantDetail(req, merchant));
+  } catch (err) {
+    console.error('getRestaurantByHash error:', err);
+    return res.status(500).json({ error: 'Unexpected server error' });
+  }
+}
+
+// --- PWA manifest for the scoped customer app -----------------------------
+// Pure builder (exported for tests): same-origin JSON the browser consumes
+// via <link rel="manifest"> on /app/<hash>. start_url/scope pin the install
+// to this restaurant's subtree, so the installed home-screen app can never
+// navigate into the platform-wide storefront.
+
+const APP_URL_PREFIX = '/app';
+const FALLBACK_THEME = '#f97316';
+const FALLBACK_BACKGROUND = '#fff7ed';
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+function buildManifest(merchant) {
+  const hash = merchant.public_hash;
+  const startUrl = `${APP_URL_PREFIX}/${hash}`;
+  const theme = HEX_COLOR.test(merchant.brand_color || '') ? merchant.brand_color : FALLBACK_THEME;
+  const name = (merchant.name || 'Restaurant').toString();
+
+  // The restaurant logo becomes the primary icon only when it is a PNG we
+  // can size-declare honestly; anything else falls back to the platform
+  // icons so installability never depends on merchant image hygiene.
+  const icons = [];
+  if (/^https?:\/\/.+\.png(\?|#|$)/i.test(merchant.logo_url || '')) {
+    icons.push({ src: merchant.logo_url, sizes: '512x512', type: 'image/png', purpose: 'any' });
+  }
+  icons.push(
+    { src: '/alabiq-icon.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    { src: '/alabiq-icon-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+  );
+
+  return {
+    name: name.slice(0, 45),
+    short_name: name.slice(0, 12),
+    description: `Order from ${name} for delivery.`,
+    start_url: startUrl,
+    scope: startUrl,
+    display: 'standalone',
+    background_color: FALLBACK_BACKGROUND,
+    theme_color: theme,
+    icons,
+  };
+}
+
+async function getRestaurantManifest(req, res) {
+  try {
+    const hash = (req.params.hash || '').toString().trim();
+    if (!/^[a-z0-9]{12}$/.test(hash)) {
+      return res.status(404).json({ error: 'Restaurant not found' });
+    }
+    const merchant = await storefrontRepository.merchantByPublicHash('food', hash);
+    // A suspended/delisted restaurant must not be installable: the app shell
+    // 404s anyway, and an installed copy degrades to the same empty state.
+    if (!isFoodListed(merchant)) {
+      return res.status(404).json({ error: 'Restaurant not found' });
+    }
+
+    return res
+      .set('Content-Type', 'application/manifest+json; charset=utf-8')
+      .set('Cache-Control', 'public, max-age=3600')
+      .json(buildManifest(merchant));
+  } catch (err) {
+    console.error('getRestaurantManifest error:', err);
+    return res.status(500).json({ error: 'Unexpected server error' });
+  }
+}
+
+module.exports = {
+  listRestaurants,
+  getRestaurant,
+  getRestaurantByHash,
+  getRestaurantManifest,
+  buildManifest,
+};

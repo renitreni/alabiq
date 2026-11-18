@@ -183,6 +183,11 @@ const restaurants = [
   ['Green Bowl', 'Healthy'],
 ].map(([name, cuisine_type], i) => ({
   id: uuid(200 + i),
+  // Demo hashes deliberately start with "demo": lib/api.js only routes
+  // /api/food calls to these fixtures when the page URL is under /demo or
+  // /app/demo, so the prefix doubles as the interception rule.
+  public_hash: `demo${(200 + i).toString(16).padStart(8, '0')}`,
+  brand_color: i === 0 ? '#b91c1c' : null,
   name,
   cuisine_type,
   description: `${cuisine_type} favourites, delivered.`,

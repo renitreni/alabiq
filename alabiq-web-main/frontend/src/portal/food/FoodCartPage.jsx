@@ -78,10 +78,14 @@ function QtyControl({ line, busy, onChange }) {
   );
 }
 
-export default function FoodCartPage() {
+// Props are for the scoped one-restaurant app (/app/<hash>): the merchant
+// comes from context instead of ?m=, and every link stays inside the scope.
+export default function FoodCartPage({ merchantId: merchantIdProp, basePath } = {}) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const merchantId = params.get('m');
+  const merchantId = merchantIdProp || params.get('m');
+  const menuPath = basePath || `/food/r/${merchantId}`;
+  const browsePath = basePath || '/food';
   const [cart, setCart] = useState(null);
   const [error, setError] = useState(null);
   const [busyId, setBusyId] = useState(null);
@@ -123,7 +127,7 @@ export default function FoodCartPage() {
           <ShoppingCart className="w-10 h-10 text-brand-grey/40 mx-auto mb-3" />
           <p className="font-bold text-brand-dark">Your cart is empty</p>
           <p className="text-sm text-brand-grey mt-1 mb-4">Pick a restaurant to start an order.</p>
-          <Link to="/food" className={btnPrimary}>Browse restaurants</Link>
+          <Link to={browsePath} className={btnPrimary}>Browse restaurants</Link>
         </Card>
       </PortalShell>
     );
@@ -134,7 +138,7 @@ export default function FoodCartPage() {
   const meetsMin = !!cart?.meetsMinimum;
 
   return (
-    <PortalShell title="Your cart" onBack={() => navigate(`/food/r/${merchantId}`)}>
+    <PortalShell title="Your cart" home={browsePath} onBack={() => navigate(menuPath)}>
       <div className="max-w-2xl mx-auto pb-28">
         {error && (
           <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
@@ -151,7 +155,7 @@ export default function FoodCartPage() {
             <ShoppingCart className="w-10 h-10 text-brand-grey/40 mx-auto mb-3" />
             <p className="font-bold text-brand-dark">Your cart is empty</p>
             <p className="text-sm text-brand-grey mt-1 mb-4">Add some items from the menu first.</p>
-            <Link to={`/food/r/${merchantId}`} className={btnPrimary}>Back to the menu</Link>
+            <Link to={menuPath} className={btnPrimary}>Back to the menu</Link>
           </Card>
         )}
 
@@ -241,13 +245,13 @@ export default function FoodCartPage() {
       {cart && items.length > 0 && (
         <div className="fixed bottom-0 inset-x-0 z-40 p-3 bg-white/95 backdrop-blur border-t border-brand-border">
           <div className="max-w-2xl mx-auto flex gap-2">
-            <Link to={`/food/r/${merchantId}`} className={btnGhost + ' shrink-0'}>
+            <Link to={menuPath} className={btnGhost + ' shrink-0'}>
               Add more
             </Link>
             <button
               type="button"
               disabled={!meetsMin || hasUnavailable}
-              onClick={() => navigate(`/food/checkout?m=${merchantId}`)}
+              onClick={() => navigate(basePath ? `${basePath}/checkout` : `/food/checkout?m=${merchantId}`)}
               className={btnPrimary + ' flex-1'}
               title={!meetsMin ? `Minimum order is ${fmtSAR(cart.minOrder)}` : undefined}
             >

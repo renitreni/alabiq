@@ -485,8 +485,12 @@ function GroupedMenuSections({ allItems, categories, brand, closed, onOpen, onSe
   );
 }
 
-export default function RestaurantPage() {
-  const { id } = useParams();
+// Props are for the scoped one-restaurant app (/app/<hash>): AppMenuPage
+// pins the merchant and rewrites every exit path (cart, login, back) into
+// the /app/<hash> subtree. On the platform route both stay undefined.
+export default function RestaurantPage({ merchantId: merchantIdProp, basePath } = {}) {
+  const { id: routeId } = useParams();
+  const id = merchantIdProp || routeId;
   const navigate = useNavigate();
   const location = useLocation();
   const { session } = useAuth();
@@ -526,7 +530,7 @@ export default function RestaurantPage() {
       if (!(payload?.items || []).length) {
         await notifyMenuUnavailable(payload?.restaurant?.name);
         if (location.key !== 'default') navigate(-1);
-        else navigate('/food');
+        else navigate(basePath || '/food');
         return;
       }
       setData(payload);
@@ -546,7 +550,7 @@ export default function RestaurantPage() {
 
   async function addToCart(item, { size = null, quantity = 1 } = {}) {
     if (!session) {
-      navigate(`/login?next=${encodeURIComponent(`/food/r/${id}`)}`);
+      navigate(`/login?next=${encodeURIComponent(basePath || `/food/r/${id}`)}`);
       return;
     }
     if (enabledSizes(item).length > 0 && !size) return;
@@ -594,11 +598,12 @@ export default function RestaurantPage() {
     <PortalShell
       wide
       compact
+      home={basePath || '/'}
       title={restaurant?.name || 'Restaurant'}
       subtitle={restaurant?.cuisine_type || undefined}
       onBack={() => {
         if (location.key !== 'default') navigate(-1);
-        else navigate('/');
+        else navigate(basePath || '/');
       }}
     >
       {error && (
@@ -839,7 +844,7 @@ export default function RestaurantPage() {
             <div className="max-w-7xl mx-auto">
               <motion.button
                 type="button"
-                onClick={() => navigate(`/food/cart?m=${id}`)}
+                onClick={() => navigate(basePath ? `${basePath}/cart` : `/food/cart?m=${id}`)}
                 whileTap={{ scale: 0.985 }}
                 className="w-full flex items-center justify-between gap-3 rounded-2xl bg-brand-black text-white px-5 py-3.5 shadow-2xl shadow-black/25 cursor-pointer"
               >
