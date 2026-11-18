@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory suffix="Test.php">./tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory suffix="Test.php">./tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+
+    <coverage>
+        <include>
+            <directory suffix=".php">./app/Services</directory>
+            <directory suffix=".php">./app/Http/Controllers</directory>
+        </include>
+    </coverage>
+
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_DEBUG" value="true"/>
+        <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="CACHE_DRIVER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="VAPID_PUBLIC_KEY" value="test-key"/>
+        <env name="VAPID_PRIVATE_KEY" value="test-key"/>
+        <env name="VAPID_SUBJECT" value="mailto:test@test.com"/>
+        <env name="REALTIME_PUBLISH_TOKEN" value="test-token"/>
+        <env name="CORS_ORIGINS" value="http://localhost"/>
+        <env name="ADMIN_EMAILS" value="admin@test.com"/>
+        <env name="SHOP_ENABLED" value="true"/>
+        <env name="PARTNER_API_ENABLED" value="false"/>
+        <env name="WORKER_ENABLED" value="false"/>
+        <env name="LEGACY_FOOD_MARKETPLACE_ENABLED" value="true"/>
+        <env name="MAPBOX_ACCESS_TOKEN" value="test-token"/>
+        <env name="APP_KEY" value="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="/>
+        <env name="APP_SIGNING_KEY" value="test-signing-key"/>
+    </php>
+</phpunit>

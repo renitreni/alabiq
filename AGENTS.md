@@ -2,7 +2,7 @@
 
 > **Purpose:** single reference for AI coding sessions. Read this first; it replaces
 > re-discovering the system from scratch. Update it when the system changes.
-> Last global scan: **2026-11-12** · Branch at scan: `feat-fix-restaurant-orders` (clean tree)
+> Last global scan: **2026-11-18** · Branch at scan: `feat-laravel-testing-phase-d-e` · Laravel migration Phase A, C, D complete
 
 ---
 
@@ -27,6 +27,8 @@ Docker stack. Anything still describing Supabase (`archive/README-legacy-supabas
 parts of `backend/README.md`, `archive/PROJECT-ANALYSIS-2026-10-06.md`) is **stale** —
 trust `DOCKER.md`, `DEPLOYMENT-PLAN.md`, and this file instead.
 
+### Production Stack (Live)
+
 | Layer | Technology |
 |---|---|
 | Frontend | React 19, Vite 8 (rolldown), Tailwind 4, React Router 7, shadcn-style (radix-slot + CVA + tailwind-merge), framer-motion, sweetalert2, lucide-react |
@@ -41,6 +43,36 @@ trust `DOCKER.md`, `DEPLOYMENT-PLAN.md`, and this file instead.
 | Push | web-push (VAPID keys) |
 | CI | GitHub Actions: unsigned iOS simulator build (`.github/workflows/ios-build.yml`) |
 | Legacy | PM2 process `alabiq-api` on `127.0.0.1:4000` kept for rollback only |
+
+### Laravel Migration (In Progress — **Not Yet Deployed**)
+
+A Laravel 11 migration is under development in `alabiq-web-main/laravel/` to replace the Node/Express backend. **This is not yet in production.**
+
+| Layer | Technology |
+|---|---|
+| Backend | **Laravel 11**, PHP 8.3+, Octane (Swoole) planned |
+| Data | Same PostgreSQL 16 (shared), migrations in `laravel/database/migrations/` |
+| Auth | Laravel Sanctum (API tokens) + custom scrypt hasher (`App\Hashing\ScryptHasher`) for password compatibility |
+| Realtime | Laravel Reverb (WebSocket) planned; SSE fallback |
+| Object storage | MinIO via `league/flysystem-aws-s3-v3` (same buckets) |
+| Maps | Mapbox (configured in `config/services.php`) |
+| Payments | STC Pay + Tap Payments (same flow, new controllers) |
+| Queue | Redis + `database` driver for background jobs |
+| Testing | PHPUnit (backend unit/feature), Pest planned |
+
+**Migration status (as of 2026-11-18):**
+- ✅ **Phase A complete**: Models (23), Migrations (20 tables), Middleware (11), Routes (`routes/api.php`), Base controllers (11), Services (6), Config, Docker compose
+- 🔄 **Phase B in progress**: 12 controllers partially implemented (most routes return 501 stubs)
+- ✅ **Phase C complete**: Money services ported — FareService, FoodMoneyService, ShopMoneyService, VatService, AppSessionsService all implemented with full logic parity
+- ✅ **Phase D complete**: PHPUnit test suite — **97 unit tests passing** covering VatService, FareService, FoodMoneyService, ShopMoneyService, AppSessionsService (pure logic tests). Feature tests created for DB-dependent services (require PostgreSQL test DB)
+- ⏳ **Phase E pending**: Docker build/test, route-by-route cutover from Express
+
+**Key constraints for migration:**
+- Must maintain **password hash compatibility** (scrypt via `ScryptHasher`)
+- Must share **same PostgreSQL schema** (Laravel migrations mirror existing tables)
+- Must support **same API contracts** (routes/api.php mirrors Express routes)
+- Feature flag `SHOP_ENABLED` gated on both stacks
+- Zero-downtime cutover via nginx upstream switching
 
 ### Production topology (DEPLOYMENT-PLAN.md §5 + 2026-11-13 entry — the current truth)
 
@@ -92,6 +124,25 @@ ALABIQ/                        ← git repo root (work here)
     │   ├── migrations/reconstructed/ ⚠ old Supabase-era SQL, reference only
     │   ├── scripts/                 seeds, checks, demo simulators, supabase import ETL
     │   └── test/          (49)      node:test unit tests (money, fare, vat, repos…)
+    ├── laravel/                     ← **Laravel 11 migration (in progress, not deployed)**
+    │   ├── app/
+    │   │   ├── Http/Controllers/    (11 done, 12 missing — Phase B)
+    │   │   ├── Models/              (23 Eloquent models)
+    │   │   ├── Services/            (6: Fare, AppSessions, Email, FileGrants, ObjectStorage)
+    │   │   ├── Hashing/ScryptHasher # password compatibility
+    │   │   └── Providers/           (5: App, Auth, Hash, Route, HashServiceProvider)
+    │   ├── bootstrap/app.php        Octane-ready bootstrap
+    │   ├── config/                  (14 config files incl. alabiq.php, auth.php, sanctum.php)
+    │   ├── database/
+    │   │   ├── migrations/          (20 tables, mirror Express schema)
+    │   │   └── seeders/             (3: Admin, ReferenceData, DatabaseSeeder)
+    │   ├── routes/
+    │   │   ├── api.php              (full API route map, mirrors Express)
+    │   │   └── console.php          (artisan commands)
+    │   ├── docker-compose.laravel.yml   dev stack (php, nginx, postgres, redis, minio)
+    │   ├── Dockerfile               php 8.3 + swoole + octane
+    │   ├── nginx/                   nginx config for Laravel
+    │   └── tests/                   (empty — Phase D)
     └── frontend/
         ├── src/main.jsx             all route definitions
         ├── src/App.jsx              marketing landing
@@ -152,6 +203,14 @@ ALABIQ/                        ← git repo root (work here)
 `POSTGRES_DB/USER/PASSWORD` · `APP_DB_USER/PASSWORD` · `REALTIME_PUBLISH_TOKEN` ·
 `MINIO_ROOT_USER/PASSWORD` · `WEB_PORT` (default 8080)
 
+### Laravel (`alabiq-web-main/laravel/.env`)
+
+`APP_KEY` · `DB_CONNECTION=pgsql` · `DB_HOST/DB_PORT/DB_DATABASE/DB_USERNAME/DB_PASSWORD` ·
+`SESSION_DRIVER=database` · `SANCTUM_STATEFUL_DOMAINS` · `MAPBOX_ACCESS_TOKEN` ·
+`MINIO_ENDPOINT/KEY/SECRET/BUCKET` · `MAIL_MAILER/SMTP_*` · `STC_PAY_NUMBER/RECIPIENT` ·
+`TAP_API_KEY/TAP_SECRET_KEY` · `VAPID_PUBLIC_KEY/PRIVATE_KEY/SUBJECT` ·
+`FEATURE_SHOP_ENABLED` · `ADMIN_EMAILS`
+
 ---
 
 ## 6. Commands
@@ -174,7 +233,22 @@ npm run dev                  # vite
 npm run build                # vite build → dist/
 npm run mobile:sync          # build + cap sync (Android/iOS)
 
-# Useful backend scripts
+# Laravel (migration stack)
+cd alabiq-web-main/laravel
+composer install                         # install deps
+cp .env.example .env                     # configure
+php artisan key:generate                 # generate APP_KEY
+php artisan migrate --seed               # run migrations + seeders
+php artisan serve                        # dev server (port 8000)
+# OR: docker compose -f docker-compose.laravel.yml up --build  # full stack
+
+# Useful Laravel scripts
+php artisan db:seed --class=AdminSeeder
+php artisan db:seed --class=ReferenceDataSeeder
+php artisan make:controller Food/RestaurantsController   # scaffold missing controllers
+php artisan test                         # PHPUnit (empty — Phase D)
+
+# Useful backend scripts (Express)
 npm run seed:admin / seed:super-admin / set:password
 npm run import:supabase / :verify / :cleanup    # legacy Supabase → Postgres ETL
 npm run migrate:media-urls:apply                 # rewrite stored media URLs
@@ -222,6 +296,16 @@ npm run reset:orders · delete:account
 10. Server credentials file + token-bearing remote live in the working tree — never
     commit, rotate the exposed PAT.
 
+**Laravel Migration Risks:**
+11. **12 controllers partially implemented** (Phase B) — most routes return 501 stubs; need full implementation
+12. ~~Money services not ported~~ — ✅ **RESOLVED** (Phase C complete)
+13. ~~No PHPUnit tests~~ — ✅ **RESOLVED** (97 unit tests passing, Phase D complete)
+14. **Scrypt password compatibility** — `ScryptHasher` must match Node `scrypt` exactly (verified via `Hash::check`)
+15. **Shared DB schema drift risk** — Laravel migrations must stay in sync with Express `migrations/postgres/`
+16. **Realtime parity** — Express uses custom SSE (`/api/events`); Laravel plans Reverb + SSE fallback
+17. **Zero-downtime cutover untested** — nginx upstream switch procedure needs validation
+18. **Feature tests require PostgreSQL** — Unit tests use SQLite; Feature tests need a test PostgreSQL instance
+
 ---
 
 ## 9. Working agreements for AI sessions
@@ -229,10 +313,11 @@ npm run reset:orders · delete:account
 - Work in `alabiq-web-main/`; the repo root holds docs/backups only.
 - **Never** SSH to the prod VPS or touch live pages unless the owner explicitly asks.
 - Targeted edits only; match existing naming/structure; no new dependencies without asking.
-- Backend: CommonJS, no build step, no TypeScript. Frontend: ESM + JSX.
-- Run `npm test` in `backend/` after changing money/auth/dispatch/repository logic.
+- **Express Backend:** CommonJS, no build step, no TypeScript. **Laravel Backend:** PHP 8.3+, PSR-12, strict types where practical. Frontend: ESM + JSX.
+- Run `npm test` in `backend/` after changing money/auth/dispatch/repository logic. Run `php artisan test` in `laravel/` after changing Laravel controllers/services.
 - Docker-aware: file permissions, volume mounts (`postgres_data`, `redis_data`,
   `object_data` are persistent), no extra host port bindings (neighbors share the box).
+- **Laravel migration:** When changing Laravel code, run `php -l` on edited files; keep `routes/api.php` in sync with Express routes; maintain scrypt password compatibility.
 - When changing architecture, env vars, or deployment: **update this file** (and DOCKER.md /
   DEPLOYMENT-PLAN.md where relevant) in the same change.
 
@@ -242,9 +327,13 @@ npm run reset:orders · delete:account
 
 | Need | Read |
 |---|---|
-| Current system truth | this file → `alabiq-web-main/DOCKER.md` |
+| Current system truth (Express) | this file → `alabiq-web-main/DOCKER.md` |
 | Repo landing / orientation | `README.md` |
 | Prod topology, cutover, incidents | `DEPLOYMENT-PLAN.md` (§1 layout, §5 topology, §10 log) |
 | Historical pre-Docker analysis | `archive/` (⚠ both files predate the Docker migration) |
-| Backend endpoint/auth details | `alabiq-web-main/backend/README.md` (⚠ partially stale) |
-| Env var reference | `backend/.env.example`, `frontend/.env.example`, `.env.docker.example` |
+| **Express Backend** endpoint/auth details | `alabiq-web-main/backend/README.md` (⚠ partially stale) |
+| **Laravel Migration** status & structure | this file (§2), `alabiq-web-main/laravel/` |
+| Laravel routes reference | `alabiq-web-main/laravel/routes/api.php` |
+| Laravel models reference | `alabiq-web-main/laravel/app/Models/` |
+| Env var reference (Express) | `backend/.env.example`, `frontend/.env.example`, `.env.docker.example` |
+| Env var reference (Laravel) | `laravel/.env.example`, `laravel/config/*.php` |

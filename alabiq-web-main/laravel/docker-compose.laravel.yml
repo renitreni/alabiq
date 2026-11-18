@@ -1,0 +1,214 @@
+# Laravel services overlay for docker-compose.yml
+# Usage: docker compose -f docker-compose.yml -f laravel/docker-compose.laravel.yml up -d
+
+services:
+  # Laravel API (replaces the Node api service)
+  laravel-api:
+    build:
+      context: ./laravel
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - path: ./laravel/.env
+        required: false
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-alabiq}
+      DB_USERNAME: ${APP_DB_USER:-alabiq_app}
+      DB_PASSWORD: ${APP_DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: null
+      REDIS_PORT: 6379
+      REALTIME_INTERNAL_URL: http://realtime:4100
+      REALTIME_PUBLISH_TOKEN: ${REALTIME_PUBLISH_TOKEN}
+      OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      OBJECT_STORAGE_REGION: us-east-1
+      OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-alabiq}
+      OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      OBJECT_STORAGE_FORCE_PATH_STYLE: "true"
+      AWS_ENDPOINT: http://minio:9000
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-alabiq}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_USE_PATH_STYLE_ENDPOINT: "true"
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      PARTNER_API_ENABLED: "true"
+      WORKER_ENABLED: "true"
+      LEGACY_FOOD_MARKETPLACE_ENABLED: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      seed-reference:
+        condition: service_completed_successfully
+      realtime:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    expose: ["9000"]
+    ports:
+      - "127.0.0.1:4001:9000"
+    networks: [app]
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "php", "artisan", "health:check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Laravel Queue Worker (replaces the Node worker service)
+  laravel-queue-worker:
+    build:
+      context: ./laravel
+      dockerfile: Dockerfile
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
+    restart: unless-stopped
+    env_file:
+      - path: ./laravel/.env
+        required: false
+    environment:
+      APP_ENV: production
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-alabiq}
+      DB_USERNAME: ${APP_DB_USER:-alabiq_app}
+      DB_PASSWORD: ${APP_DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: null
+      REDIS_PORT: 6379
+      REALTIME_INTERNAL_URL: http://realtime:4100
+      REALTIME_PUBLISH_TOKEN: ${REALTIME_PUBLISH_TOKEN}
+      OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      OBJECT_STORAGE_REGION: us-east-1
+      OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-alabiq}
+      OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      OBJECT_STORAGE_FORCE_PATH_STYLE: "true"
+      WORKER_ENABLED: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      seed-reference:
+        condition: service_completed_successfully
+      realtime:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks: [app]
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "php", "artisan", "health:check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Laravel Scheduler (for cron jobs)
+  laravel-scheduler:
+    build:
+      context: ./laravel
+      dockerfile: Dockerfile
+    command: php artisan schedule:work
+    restart: unless-stopped
+    env_file:
+      - path: ./laravel/.env
+        required: false
+    environment:
+      APP_ENV: production
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-alabiq}
+      DB_USERNAME: ${APP_DB_USER:-alabiq_app}
+      DB_PASSWORD: ${APP_DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: null
+      REDIS_PORT: 6379
+      WORKER_ENABLED: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      seed-reference:
+        condition: service_completed_successfully
+    networks: [app]
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+  # Laravel Migrations (replaces the Node migrate service)
+  migrate:
+    build:
+      context: ./laravel
+      dockerfile: Dockerfile
+    command: php artisan migrate --force
+    environment:
+      APP_ENV: production
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-alabiq}
+      DB_USERNAME: ${POSTGRES_USER:-alabiq}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [app]
+
+  # Laravel Seed Reference Data (replaces the Node seed-reference service)
+  seed-reference:
+    build:
+      context: ./laravel
+      dockerfile: Dockerfile
+    command: php artisan db:seed --class=ReferenceDataSeeder --force
+    environment:
+      APP_ENV: production
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-alabiq}
+      DB_USERNAME: ${POSTGRES_USER:-alabiq}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks: [app]
+
+  # Disable the old Node services
+  api:
+    deploy:
+      replicas: 0
+
+  worker:
+    deploy:
+      replicas: 0
