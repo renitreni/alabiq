@@ -16,3 +16,5 @@ yarn-error.log
 /.vscode
 /*.log
 /coverage
+# Build artifacts — never commit (stale manifests break provider resolution)
+/bootstrap/cache/*.php

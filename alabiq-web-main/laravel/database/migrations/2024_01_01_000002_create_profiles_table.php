@@ -26,7 +26,7 @@ return new class extends Migration
             $table->text('vehicle_plate')->nullable();
             $table->boolean('driver_approved')->default(false);
             $table->string('driver_verification_status', 20)->default('none');
-            $table->json('service_types')->default(['pick_drop', 'food', 'shop']);
+            $table->json('service_types')->default(json_encode(['pick_drop', 'food', 'shop']));
             $table->text('avatar_url')->nullable();
             $table->text('address')->nullable();
             $table->decimal('cash_owed', 14, 2)->default(0);
@@ -36,9 +36,11 @@ return new class extends Migration
             $table->uuid('disabled_by')->nullable();
             $table->timestampTz('created_at')->useCurrent();
             $table->timestampTz('updated_at')->useCurrent();
-
-            $table->foreign('disabled_by')->references('id')->on('profiles')->onDelete('set null');
         });
+
+        // Self-referencing FK added after table creation: Laravel otherwise emits
+        // the FK ALTER before the primary key exists (Postgres rejects it).
+        DB::statement('ALTER TABLE profiles ADD CONSTRAINT profiles_disabled_by_foreign FOREIGN KEY (disabled_by) REFERENCES profiles(id) ON DELETE SET NULL');
 
         // Add check constraints
         DB::statement("ALTER TABLE profiles ADD CONSTRAINT profiles_role_check CHECK (role IN ('passenger','driver','merchant','admin'))");

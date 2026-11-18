@@ -34,8 +34,11 @@ return new class extends Migration
             $table->timestampTz('created_at')->useCurrent();
 
             $table->unique(['provider', 'gateway_customer_id']);
-            DB::statement("ALTER TABLE saved_payment_methods ADD CONSTRAINT saved_payment_methods_default_check CHECK (NOT is_default OR deleted_at IS NULL)");
         });
+
+        // Raw ALTER must run AFTER the table exists — statements inside the
+        // Schema::create closure execute before the CREATE TABLE is emitted.
+        DB::statement("ALTER TABLE saved_payment_methods ADD CONSTRAINT saved_payment_methods_default_check CHECK (NOT is_default OR deleted_at IS NULL)");
 
         // Payment customers (Tap)
         Schema::create('payment_customers', function (Blueprint $table) {

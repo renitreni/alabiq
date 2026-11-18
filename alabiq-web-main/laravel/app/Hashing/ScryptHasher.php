@@ -3,35 +3,31 @@
 namespace App\Hashing;
 
 use Illuminate\Contracts\Hashing\Hasher as HasherContract;
-use ParagonIE\ConstantTimeEncoding\Base64UrlSafe;
-use ParagonIE\ConstantTimeEncoding\Hex;
 
+/**
+ * scrypt hasher compatible with the Node/Express backend (backend/lib/passwords.js).
+ *
+ * Hash format (must match Node exactly):
+ *   scrypt$N$r$p$base64url(salt)$base64url(key)
+ *
+ * Parameters mirror Node: KEY_LENGTH=64, N=16384, r=8, p=1.
+ * Legacy bcrypt hashes (imported Supabase users) verify transparently and
+ * are flagged for rehash on next successful login, same as Node.
+ */
 class ScryptHasher implements HasherContract
 {
-    /**
-     * The cost factor for scrypt.
-     */
-    protected int $N = 16384; // 2^14
+    protected int $N = 16384; // 2^14, Node PARAMETERS.N
 
-    /**
-     * The block size for scrypt.
-     */
-    protected int $r = 8;
+    protected int $r = 8;     // Node PARAMETERS.r
 
-    /**
-     * The parallelization factor for scrypt.
-     */
-    protected int $p = 1;
+    protected int $p = 1;     // Node PARAMETERS.p
 
-    /**
-     * The output length for scrypt.
-     */
-    protected int $keyLength = 32;
+    protected int $keyLength = 64; // Node KEY_LENGTH
 
     /**
      * Hash the given value.
      */
-    public function make(string $value, array $options = []): string
+    public function make($value, array $options = []): string
     {
         $N = $options['N'] ?? $this->N;
         $r = $options['r'] ?? $this->r;
@@ -41,93 +37,130 @@ class ScryptHasher implements HasherContract
         // Generate a random salt
         $salt = random_bytes(16);
 
-        // Use PHP's sodium scrypt implementation
-        if (extension_loaded('sodium')) {
-            $hash = sodium_crypto_pwhash_scryptsalsa208sha256(
-                $keyLength,
-                $value,
-                $salt,
-                $N,
-                $r,
-                $p
-            );
-        } else {
-            // Fallback to hash_pbkdf2 with scrypt-like parameters (not true scrypt)
-            // This is a last resort - sodium should be available
-            $hash = hash_pbkdf2('sha256', $value, $salt, 1, $keyLength, true);
+        $hash = ScryptEngine::derive((string) $value, $salt, $N, $r, $p, $keyLength);
+
+        // Format must match Node: scrypt$N$r$p$salt$key (base64url, no padding)
+        return 'scrypt$'.$N.'$'.$r.'$'.$p.'$'.
+               self::b64urlEncode($salt).'$'.
+               self::b64urlEncode($hash);
+    }
+
+    /**
+     * base64url encode without padding (Node Buffer.toString('base64url')).
+     */
+    private static function b64urlEncode(string $data): string
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+
+    /**
+     * base64url decode (tolerates missing padding).
+     */
+    private static function b64urlDecode(string $data): string
+    {
+        $decoded = base64_decode(strtr($data, '-_', '+/'), true);
+        if ($decoded === false) {
+            throw new \InvalidArgumentException('Invalid base64url value');
         }
 
-        // Format: $scrypt$N=$N$r=$r$p=$p$salt$hash
-        return '$scrypt$N=' . $N . '$r=' . $r . '$p=' . $p . '$' .
-               Base64UrlSafe::encode($salt) . '$' .
-               Base64UrlSafe::encode($hash);
+        return $decoded;
     }
 
     /**
      * Check the given plain value against a hash.
      */
-    public function check(string $value, string $hashedValue, array $options = []): bool
+    public function check($value, $hashedValue, array $options = []): bool
     {
-        // Check if it's our scrypt format
-        if (str_starts_with($hashedValue, '$scrypt$')) {
-            return $this->checkScrypt($value, $hashedValue);
+        $hashedValue = (string) $hashedValue;
+
+        // Our scrypt format (Node-compatible)
+        if (str_starts_with($hashedValue, 'scrypt$')) {
+            return $this->checkScrypt((string) $value, $hashedValue);
         }
 
-        // Check if it's bcrypt (for imported Supabase users)
+        // Legacy bcrypt hashes (imported Supabase users)
         if (str_starts_with($hashedValue, '$2y$') || str_starts_with($hashedValue, '$2a$') || str_starts_with($hashedValue, '$2b$')) {
-            return password_verify($value, $hashedValue);
+            return password_verify((string) $value, $hashedValue);
         }
 
         return false;
     }
 
     /**
-     * Check a scrypt hash.
+     * Check a scrypt hash (Node format: scrypt$N$r$p$salt$key).
      */
     protected function checkScrypt(string $value, string $hashedValue): bool
     {
-        // Parse the hash format: $scrypt$N=16384$r=8$p=1$salt$hash
         $parts = explode('$', $hashedValue);
 
-        if (count($parts) < 6 || $parts[1] !== 'scrypt') {
+        if (count($parts) !== 6 || $parts[0] !== 'scrypt') {
             return false;
         }
 
-        $params = [];
-        for ($i = 2; $i < 5; $i++) {
-            [$key, $val] = explode('=', $parts[$i], 2);
-            $params[$key] = (int) $val;
+        [, $nRaw, $rRaw, $pRaw, $saltRaw, $keyRaw] = $parts;
+
+        $N = (int) $nRaw;
+        $r = (int) $rRaw;
+        $p = (int) $pRaw;
+
+        // Bound stored parameters before doing expensive work (Node parity)
+        if ($N < 16384 || $N > 32768 || ($N & ($N - 1)) !== 0) {
+            return false;
+        }
+        if ($r < 1 || $r > 8 || $p < 1 || $p > 2) {
+            return false;
         }
 
-        $salt = Base64UrlSafe::decode($parts[5]);
-        $expectedHash = Base64UrlSafe::decode($parts[6]);
-
-        if (extension_loaded('sodium')) {
-            $hash = sodium_crypto_pwhash_scryptsalsa208sha256(
-                strlen($expectedHash),
-                $value,
-                $salt,
-                $params['N'] ?? $this->N,
-                $params['r'] ?? $this->r,
-                $params['p'] ?? $this->p
-            );
-
-            return hash_equals($hash, $expectedHash);
+        try {
+            $salt = self::b64urlDecode($saltRaw);
+            $expectedHash = self::b64urlDecode($keyRaw);
+        } catch (\Throwable) {
+            return false;
         }
 
-        return false;
+        $hash = ScryptEngine::derive($value, $salt, $N, $r, $p, strlen($expectedHash));
+
+        return hash_equals($hash, $expectedHash);
     }
 
     /**
      * Determine if the hash needs to be rehashed.
      */
-    public function needsRehash(string $hashedValue, array $options = []): bool
+    public function needsRehash($hashedValue, array $options = []): bool
     {
-        // Always return false for scrypt - we don't auto-rehash
-        // If it's bcrypt, we might want to rehash to scrypt on next login
-        if (str_starts_with($hashedValue, '$2y$') || str_starts_with($hashedValue, '$2a$') || str_starts_with($hashedValue, '$2b$')) {
-            return true; // Rehash bcrypt to scrypt
+        // Rehash bcrypt to scrypt on next successful login (Node parity)
+        if (str_starts_with((string) $hashedValue, '$2y$') || str_starts_with((string) $hashedValue, '$2a$') || str_starts_with((string) $hashedValue, '$2b$')) {
+            return true;
         }
+
         return false;
+    }
+
+    /**
+     * Get information about the given hashed value.
+     */
+    public function info($hashedValue): array
+    {
+        $hashedValue = (string) $hashedValue;
+
+        if (str_starts_with($hashedValue, 'scrypt$')) {
+            $parts = explode('$', $hashedValue);
+
+            return [
+                'algo' => 'scrypt',
+                'algoName' => 'scrypt',
+                'options' => [
+                    'N' => isset($parts[1]) ? (int) $parts[1] : null,
+                    'r' => isset($parts[2]) ? (int) $parts[2] : null,
+                    'p' => isset($parts[3]) ? (int) $parts[3] : null,
+                ],
+            ];
+        }
+
+        if (str_starts_with($hashedValue, '$2y$') || str_starts_with($hashedValue, '$2a$') || str_starts_with($hashedValue, '$2b$')) {
+            return password_get_info($hashedValue);
+        }
+
+        return ['algo' => null, 'algoName' => 'unknown', 'options' => []];
     }
 }

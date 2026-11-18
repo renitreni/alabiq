@@ -1,4 +1,4 @@
-FROM php:8.2-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 # Install system dependencies
 RUN apk add --no-cache \
@@ -38,25 +38,28 @@ WORKDIR /var/www/html
 # Copy composer files first for better caching
 COPY composer.json composer.lock ./
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# files-autoload entries (e.g. app/Support/helpers.php) must exist before
+# composer install generates the autoloader
+COPY app/Support/helpers.php app/Support/helpers.php
+
+# Install PHP dependencies (skip scripts: artisan not in image yet)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 # Copy application code
 COPY . .
 
-# Generate app key if not set
-RUN php artisan key:generate --force || true
+# Re-run autoload generation so post-autoload-dump scripts (package:discover) execute
+RUN composer dump-autoload --optimize --no-interaction
 
-# Cache config for production
-RUN php artisan config:cache || true \
-    && php artisan route:cache || true \
-    && php artisan view:cache || true
-
-# Set permissions
+# Set permissions (must be before USER switch; runtime env is baked into
+# config cache by the entrypoint, not here)
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 9000
 
 USER www-data
 
+# Cache config at container start so runtime env vars/env_file are honored
+COPY --chown=www-data:www-data docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["php-fpm"]

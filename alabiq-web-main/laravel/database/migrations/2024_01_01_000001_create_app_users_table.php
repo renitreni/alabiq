@@ -12,7 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Enable pgcrypto extension
+        // Enable pgcrypto extension (schema is a Supabase-ism; create it so fresh
+        // databases work — IF NOT EXISTS keeps existing deployments untouched)
+        DB::statement('CREATE SCHEMA IF NOT EXISTS extensions');
         DB::statement('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions');
 
         Schema::create('app_users', function (Blueprint $table) {

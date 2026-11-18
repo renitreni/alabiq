@@ -40,6 +40,8 @@ class Merchant extends Model
         'credit_used',
         'is_featured',
         'badge',
+        'public_hash',
+        'brand_color',
     ];
 
     protected $casts = [
