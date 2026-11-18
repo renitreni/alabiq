@@ -269,13 +269,19 @@ npm run reset:orders · delete:account
   `/opt/SmartMappiaa/deploy.sh` (build api/worker/migrate/frontend, migrate, up -d,
   health-check, swap `/var/www/alabiq`). Scripts: `deploy/post-receive` +
   `deploy/server-deploy.sh`; log: `/var/log/alabiq-deploy.log`.
-- Active branches: `feat-restaurant-delivery-api` (current), `main`.
-- Recent work: Phase 7 (2026-11-13) — partner item-pricing validation +
-  migrations 0010–0011, `payment_method 'external'`, `delivery_quotes.distance_km`,
-  worker service enabled (Redis GPS hot path), full Alabiq rebrand
-  (web/Android/iOS). Also fixed: truncated `deliveriesController.js` (API boot
-  crash, now covered by `test/syntaxGate.test.js`), worker webhook import bug,
-  undeclared `redis` dependency.
+- Active branches: `main` (canonical — 2026-11-18: both feature branches merged
+  into it and deleted). `feat-laravel-testing-phase-d-e` merged fully contained
+  `feat-restaurant-delivery-api`, so both fast-forwarded.
+- Recent work: 2026-11-18 — one-restaurant-one-app scoped customer PWA
+  (`/app/:hash`, migration 0012 `merchants.public_hash`/`brand_color`,
+  per-restaurant PWA manifest, admin app link, `/demo/restaurant` fixture demo);
+  Laravel Docker/scrypt hasher fixes. Earlier: Phase 7 (2026-11-13) — partner
+  item-pricing validation + migrations 0010–0011, `payment_method 'external'`,
+  `delivery_quotes.distance_km`, worker service enabled (Redis GPS hot path),
+  full Alabiq rebrand (web/Android/iOS). Also fixed: truncated
+  `deliveriesController.js` (API boot crash, now covered by
+  `test/syntaxGate.test.js`), worker webhook import bug, undeclared `redis`
+  dependency.
 
 ---
 
