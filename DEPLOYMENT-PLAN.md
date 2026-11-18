@@ -145,6 +145,78 @@ New checkout at `/opt/SmartMappiaa/alabiq-docker` (old checkout left untouched f
 
 ## 10. Implementation log
 
+### 2026-11-19 — Shared-hosting redeploy: full-Laravel structure + pusher (feat/full-laravel) ✅
+
+The host was migrated from the old three-part layout (`alabiq-web-main/laravel/`) to the new
+full-Laravel app root (`alabiq-web-main/` is the app). Node `backend/`+`frontend/`, the Node
+`realtime` service, and the Capacitor mobile apps are removed from the repo; realtime is
+**pusher.com** (no local realtime service). See `PLAN-full-laravel.md` and `AGENTS.md` header.
+
+**Local gate before deploy** (all green):
+1. `docker compose down -v` → `docker compose up --build -d` (fresh volumes; all 25 migrations
+   run on fresh pgsql; migrate/seed one-shots green).
+2. Smoke: `GET /` 200 (Blade welcome), `GET /api/health` 200 (`db/redis: connected`),
+   `GET /api/food/restaurants` 200, `GET /api/auth/session` 401.
+3. `php artisan test` → 102/102 (feature suite on auto-created `alabiq_test` pgsql DB).
+4. MariaDB portability: temp `mariadb:11.8` container + `php:8.4-cli` with `pdo_mysql` ran all
+   25 migrations clean (validates the driver-aware SQL before touching the host).
+
+**Host procedure** (SSH `ssh -p 65002 u805024096@178.16.135.22`, docroot
+`/home/u805024096/domains/alabiq.yaramay.online/public_html`):
+
+```sh
+# 1. Preserve the server .env (old location), then rsync the new app root
+cd public_html/alabiq-web-main && mv laravel/.env .env
+rsync -az --delete \
+  --exclude='.env' --exclude='.env.*' --exclude='vendor/' --exclude='node_modules/' \
+  --exclude='storage/' --exclude='archive/' --exclude='.phpunit.cache/' \
+  -e "ssh -p 65002" ./alabiq-web-main/ \
+  u805024096@178.16.135.22:.../public_html/alabiq-web-main/
+# host: stale backend/frontend dirs removed by hand (rsync can't delete excluded .env inside)
+rm -rf backend frontend laravel   # laravel/ after copying laravel/storage/* into storage/
+
+# 2. Point the docroot .htaccess at the new public/ (was laravel/public/)
+sed -i "s|alabiq-web-main/laravel/public|alabiq-web-main/public|g" public_html/.htaccess
+
+# 3. Rebuild deps + run new migrations (composer MUST run on alt-php 8.4 — default is 8.3)
+COMPOSER_ALLOW_SUPERUSER=1 /opt/alt/php84/usr/bin/php /usr/local/bin/composer install \
+  --no-dev --optimize-autoloader --ignore-platform-req=ext-pdo_pgsql --ignore-platform-req=ext-redis
+/opt/alt/php84/usr/bin/php artisan migrate --force        # adds 000021–000025
+/opt/alt/php84/usr/bin/php artisan db:seed --class=ReferenceDataSeeder --force
+/opt/alt/php84/usr/bin/php artisan config:cache && route:cache && view:cache
+```
+
+**Fixes shipped in this deploy** (commit `f4a7f03`): migration 000021 MariaDB-safe (prefix-length
+unique index on TEXT + `DROP CONSTRAINT` syntax), new migration 000025 (`ratings` table — was in
+Express 0001 but missing from the mirror, broke `/api/food/restaurants`), restaurants controller
+(aggregate from per-order ratings, driver-aware ILIKE→LIKE, `weekday/opens_at/closes_at` column
+names), `public/.htaccess` re-tracked (lsphp84 pin), pusher package + `config/broadcasting.php`.
+
+**HTTPS smoke after deploy** (`curl https://alabiq.yaramay.online`):
+
+| Route | Result | Meaning |
+|---|---|---|
+| `GET /` | 200 | Blade welcome page (Vite assets served from `public/build`) |
+| `GET /api/health` | **503** | BY DESIGN here: `db: connected`, `redis: error` — no Redis on shared host (degraded mode, same as 2026-11-18) |
+| `GET /api/food/restaurants` | 200 | previously 500 — fixed (ratings table + LIKE portability) |
+| `GET /api/auth/session` | 401 | auth middleware stack reachable |
+| `POST /api/auth/login` (bad creds) | 401 | scrypt hasher works on alt-php 8.4 |
+| `GET /api/shop/stores` | 503 | `SHOP_ENABLED=false` on this host (feature flag) |
+| `GET /api/payments/config` | 500 | Phase-2.2 stub controller — pending parity work |
+| `http://` → `https://` | 301 | redirect enforced |
+
+**Demo walkthrough** (what to click):
+1. Landing: `https://alabiq.yaramay.online/` — Blade welcome page.
+2. API health: `https://alabiq.yaramay.online/api/health` — JSON `status: degraded` (no Redis on host).
+3. Restaurant listing: `https://alabiq.yaramay.online/api/food/restaurants` — JSON `restaurants: []`
+   (empty until merchants are seeded), `?q=shawarma` exercises the portable search.
+4. Auth probe: `https://alabiq.yaramay.online/api/auth/session` in a browser → 401 JSON (middleware
+   works); full login flow needs a seeded user (`php artisan db:seed --class=AdminSeeder` on host).
+
+**Known gaps (unchanged from 2026-11-18):** no Redis (file cache/sync queue), no MinIO/S3,
+no SMTP, `SHOP_ENABLED=false`, payments controllers are Phase-2.2 stubs, PUSHER_APP_* unset
+(broadcasting configured but not publishing).
+
 ### 2026-11-18 — Shared-hosting deployment: alabiq.yaramay.online on Hostinger ✅
 
 The repo was uploaded whole (git clone layout) to a **Hostinger shared-hosting** account as a
