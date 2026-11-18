@@ -9,7 +9,8 @@ use App\Models\Merchant;
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
 use App\Models\MerchantHour;
-use App\Models\Rating;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class RestaurantsController extends Controller
 {
@@ -27,10 +28,13 @@ class RestaurantsController extends Controller
                 ->where('status', 'active');
 
             if ($q) {
-                $query->where(function ($qb) use ($q) {
-                    $qb->where('name', 'ILIKE', "%{$q}%")
-                        ->orWhere('address', 'ILIKE', "%{$q}%")
-                        ->orWhere('cuisine_type', 'ILIKE', "%{$q}%");
+                // ILIKE is pgsql-only; MariaDB/MySQL LIKE is case-insensitive
+                // under utf8mb4_general_ci (the shared-hosting collation).
+                $like = Schema::getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+                $query->where(function ($qb) use ($q, $like) {
+                    $qb->where('name', $like, "%{$q}%")
+                        ->orWhere('address', $like, "%{$q}%")
+                        ->orWhere('cuisine_type', $like, "%{$q}%");
                 });
             }
 
@@ -49,8 +53,12 @@ class RestaurantsController extends Controller
 
             $merchantIds = $merchants->pluck('id')->toArray();
 
-            $ratings = Rating::where('vertical', 'food')
+            // Aggregated from the per-order `ratings` table (mirrors Express
+            // storefrontRepository.ratings) — no Rating model/aggregate table.
+            $ratings = DB::table('ratings')
                 ->whereIn('merchant_id', $merchantIds)
+                ->selectRaw('merchant_id, avg(food_rating) as rating, count(*) as review_count')
+                ->groupBy('merchant_id')
                 ->get()
                 ->keyBy('merchant_id');
 
@@ -61,8 +69,8 @@ class RestaurantsController extends Controller
                 ->pluck('item_count', 'merchant_id');
 
             $hours = MerchantHour::whereIn('merchant_id', $merchantIds)
-                ->orderBy('day_of_week')
-                ->orderBy('open_time')
+                ->orderBy('weekday')
+                ->orderBy('opens_at')
                 ->get()
                 ->groupBy('merchant_id');
 
@@ -144,8 +152,8 @@ class RestaurantsController extends Controller
             }
 
             $merchantHours = MerchantHour::where('merchant_id', $id)
-                ->orderBy('day_of_week')
-                ->orderBy('open_time')
+                ->orderBy('weekday')
+                ->orderBy('opens_at')
                 ->get();
 
             $accepting = $merchant->accepting_orders ?? true;
@@ -217,9 +225,9 @@ class RestaurantsController extends Controller
         $nextLabel = null;
 
         foreach ($hours as $hour) {
-            $hourDay = (int)$hour->day_of_week;
-            $openTime = $hour->open_time;
-            $closeTime = $hour->close_time;
+            $hourDay = (int)$hour->weekday;
+            $openTime = $hour->opens_at;
+            $closeTime = $hour->closes_at;
 
             if ($hourDay === $dayOfWeek) {
                 if ($openTime <= $currentTime && $currentTime < $closeTime) {
@@ -236,10 +244,10 @@ class RestaurantsController extends Controller
         if (!$openNow && !$nextChange) {
             for ($i = 1; $i <= 7; $i++) {
                 $checkDay = ($dayOfWeek + $i) % 7;
-                $dayHours = $hours->where('day_of_week', $checkDay);
+                $dayHours = $hours->where('weekday', $checkDay);
                 if ($dayHours->isNotEmpty()) {
-                    $firstOpen = $dayHours->sortBy('open_time')->first();
-                    $nextChange = $firstOpen->open_time;
+                    $firstOpen = $dayHours->sortBy('opens_at')->first();
+                    $nextChange = $firstOpen->opens_at;
                     $nextLabel = 'Opens ' . $this->dayName($checkDay) . ' at';
                     break;
                 }

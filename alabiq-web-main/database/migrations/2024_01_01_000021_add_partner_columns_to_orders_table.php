@@ -38,8 +38,9 @@ return new class extends Migration
             DB::statement("ALTER TABLE orders ADD CONSTRAINT orders_payment_method_check CHECK (payment_method IN ('stcpay','tap','cash','external')) NOT VALID");
             DB::statement('ALTER TABLE orders VALIDATE CONSTRAINT orders_payment_method_check');
         } else {
-            // MySQL 8.0.19+ / MariaDB syntax for dropping a named CHECK
-            DB::statement('ALTER TABLE orders DROP CHECK orders_payment_method_check');
+            // MariaDB syntax for dropping a named CHECK (the shared-hosting target;
+            // MySQL 8 would use DROP CHECK instead)
+            DB::statement('ALTER TABLE orders DROP CONSTRAINT orders_payment_method_check');
             DB::statement("ALTER TABLE orders ADD CONSTRAINT orders_payment_method_check CHECK (payment_method IN ('stcpay','tap','cash','external'))");
         }
 
@@ -47,11 +48,9 @@ return new class extends Migration
         if ($isPg) {
             DB::statement("CREATE UNIQUE INDEX orders_partner_external ON orders (merchant_id, external_order_id) WHERE source = 'restaurant_partner' AND external_order_id IS NOT NULL");
         } else {
-            // MySQL/MariaDB have no partial indexes; NULLs are distinct in unique
-            // indexes so marketplace orders (NULL external_order_id) still pass.
-            Schema::table('orders', function (Blueprint $table) {
-                $table->unique(['merchant_id', 'external_order_id'], 'orders_partner_external');
-            });
+            // MySQL/MariaDB: no partial indexes (NULLs are distinct, so marketplace
+            // orders still pass), and TEXT needs an index prefix length.
+            DB::statement('CREATE UNIQUE INDEX orders_partner_external ON orders (merchant_id, external_order_id(100))');
         }
     }
 
@@ -72,7 +71,7 @@ return new class extends Migration
             DB::statement("ALTER TABLE orders ADD CONSTRAINT orders_payment_method_check CHECK (payment_method IN ('stcpay','tap','cash')) NOT VALID");
             DB::statement('ALTER TABLE orders VALIDATE CONSTRAINT orders_payment_method_check');
         } else {
-            DB::statement('ALTER TABLE orders DROP CHECK orders_payment_method_check');
+            DB::statement('ALTER TABLE orders DROP CONSTRAINT orders_payment_method_check');
             DB::statement("ALTER TABLE orders ADD CONSTRAINT orders_payment_method_check CHECK (payment_method IN ('stcpay','tap','cash'))");
         }
 
