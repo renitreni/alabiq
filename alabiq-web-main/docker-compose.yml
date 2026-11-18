@@ -1,3 +1,10 @@
+# Alabiq — full-Laravel stack.
+# Replaces the former Node api/worker/migrate/seed services + React frontend
+# container (see archive/full-laravel-migration/ and PLAN-full-laravel.md).
+#
+# Services: postgres, redis, minio, realtime (Node SSE, kept until Reverb),
+# migrate + seed-reference (one-shot artisan), app (php-fpm), web (nginx),
+# queue-worker, scheduler.
 services:
   postgres:
     image: postgres:16-alpine
@@ -68,45 +75,79 @@ services:
     networks: [app]
 
   migrate:
-    build: ./backend
-    command: ["node", "scripts/migrate.js"]
+    build: .
+    command: ["php", "artisan", "migrate", "--force"]
+    env_file:
+      - path: ./.env
+        required: false
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://${POSTGRES_USER:-alabiq}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-alabiq}
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-alabiq}
+      DB_USERNAME: ${POSTGRES_USER:-alabiq}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
     networks: [app]
 
   seed-reference:
-    build: ./backend
-    command: ["node", "scripts/seed-reference-data.js"]
+    build: .
+    command: ["php", "artisan", "db:seed", "--class=ReferenceDataSeeder", "--force"]
+    env_file:
+      - path: ./.env
+        required: false
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://${POSTGRES_USER:-alabiq}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-alabiq}
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-alabiq}
+      DB_USERNAME: ${POSTGRES_USER:-alabiq}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
       migrate:
         condition: service_completed_successfully
     networks: [app]
 
-  api:
-    build: ./backend
+  app:
+    build: .
     restart: unless-stopped
     env_file:
-      - path: ./backend/.env
+      - path: ./.env
         required: false
-    environment:
-      NODE_ENV: production
-      PORT: 4000
+    environment: &laravel-app-env
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: http://localhost:${WEB_PORT:-8080}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-alabiq}
+      DB_USERNAME: ${APP_DB_USER:-alabiq_app}
+      DB_PASSWORD: ${APP_DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: null
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: file
       REALTIME_INTERNAL_URL: http://realtime:4100
       REALTIME_PUBLISH_TOKEN: ${REALTIME_PUBLISH_TOKEN:?Set REALTIME_PUBLISH_TOKEN in .env}
-      DATABASE_URL: postgres://${APP_DB_USER:-alabiq_app}:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-alabiq}
       OBJECT_STORAGE_ENDPOINT: http://minio:9000
       OBJECT_STORAGE_REGION: us-east-1
       OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-alabiq}
       OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       OBJECT_STORAGE_FORCE_PATH_STYLE: "true"
-      # Phase 6: Single-branch pilot — enable Partner API + Worker
+      AWS_ENDPOINT: http://minio:9000
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-alabiq}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_USE_PATH_STYLE_ENDPOINT: "true"
       PARTNER_API_ENABLED: "true"
       WORKER_ENABLED: "true"
       LEGACY_FOOD_MARKETPLACE_ENABLED: "true"
@@ -121,13 +162,7 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-    expose: ["4000"]
-    # Host publish lives in the BASE file (not only docker-compose.prod.yml)
-    # so a plain `docker compose up -d` can never silently drop the mapping
-    # again — see DEPLOYMENT-PLAN.md §10 incident 2026-10-22. Compose v2
-    # dedupes the identical entry when the prod overlay is also used.
-    ports:
-      - "127.0.0.1:4001:4000"
+    expose: ["9000"]
     networks: [app]
     deploy:
       resources:
@@ -138,54 +173,45 @@ services:
           cpus: '0.5'
           memory: 256M
     healthcheck:
-      test: ["CMD", "node", "-e", "require('./lib/database/pool').query('SELECT 1').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      test: ["CMD", "php", "artisan", "health:check"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
 
-  frontend:
+  web:
     build:
-      context: ./frontend
-      args:
-        VITE_API_BASE: /
+      context: .
+      dockerfile: nginx/Dockerfile
     restart: unless-stopped
-    depends_on: [api]
+    depends_on:
+      app:
+        condition: service_healthy
     ports:
-      - "${WEB_PORT:-8080}:80"
+      - "${WEB_PORT:-8080}:8080"
+      # Host-side alias preserved for the SSE-safe nginx block in prod
+      # (DEPLOYMENT-PLAN.md §5 topology: /api/ → 127.0.0.1:4001).
+      - "127.0.0.1:4001:8080"
     networks: [app]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
-  worker:
-    build: ./backend
-    command: ["node", "worker.js"]
+  queue-worker:
+    build: .
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=90"]
     restart: unless-stopped
     env_file:
-      - path: ./backend/.env
+      - path: ./.env
         required: false
-    environment:
-      NODE_ENV: production
-      REDIS_URL: redis://redis:6379
-      REALTIME_INTERNAL_URL: http://realtime:4100
-      REALTIME_PUBLISH_TOKEN: ${REALTIME_PUBLISH_TOKEN:?Set REALTIME_PUBLISH_TOKEN in .env}
-      DATABASE_URL: postgres://${APP_DB_USER:-alabiq_app}:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-alabiq}
-      OBJECT_STORAGE_ENDPOINT: http://minio:9000
-      OBJECT_STORAGE_REGION: us-east-1
-      OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-alabiq}
-      OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-      OBJECT_STORAGE_FORCE_PATH_STYLE: "true"
-      WORKER_ENABLED: "true"
+    environment: *laravel-app-env
     depends_on:
-      postgres:
-        condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
-      seed-reference:
-        condition: service_completed_successfully
-      realtime:
+      app:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      minio:
         condition: service_healthy
     networks: [app]
     deploy:
@@ -197,11 +223,32 @@ services:
           cpus: '0.25'
           memory: 128M
     healthcheck:
-      test: ["CMD", "node", "-e", "require('./lib/database/pool').query('SELECT 1').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      test: ["CMD", "php", "artisan", "health:check"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  scheduler:
+    build: .
+    command: ["php", "artisan", "schedule:work"]
+    restart: unless-stopped
+    env_file:
+      - path: ./.env
+        required: false
+    environment: *laravel-app-env
+    depends_on:
+      app:
+        condition: service_healthy
+    networks: [app]
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
 
 volumes:
   postgres_data:

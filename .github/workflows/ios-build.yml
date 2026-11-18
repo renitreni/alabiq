@@ -5,7 +5,11 @@ on:
   pull_request:
     paths:
       - ".github/workflows/ios-build.yml"
-      - "alabiq-web-main/frontend/**"
+      - "alabiq-web-main/mobile/**"
+      - "alabiq-web-main/resources/**"
+      - "alabiq-web-main/package.json"
+      - "alabiq-web-main/package-lock.json"
+      - "alabiq-web-main/vite.config.js"
   push:
     branches:
       - full
@@ -13,7 +17,11 @@ on:
       - master
     paths:
       - ".github/workflows/ios-build.yml"
-      - "alabiq-web-main/frontend/**"
+      - "alabiq-web-main/mobile/**"
+      - "alabiq-web-main/resources/**"
+      - "alabiq-web-main/package.json"
+      - "alabiq-web-main/package-lock.json"
+      - "alabiq-web-main/vite.config.js"
 
 permissions:
   contents: read
@@ -30,16 +38,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: alabiq-web-main/frontend
-
-    env:
-      VITE_API_BASE: ${{ vars.VITE_API_BASE || 'https://api.alabiq.com' }}
-      VITE_MAP_PROVIDER: ${{ vars.VITE_MAP_PROVIDER || 'google' }}
-      VITE_GOOGLE_MAPS_BROWSER_KEY: ${{ vars.VITE_GOOGLE_MAPS_BROWSER_KEY }}
-      VITE_GOOGLE_MAP_ID: ${{ vars.VITE_GOOGLE_MAP_ID }}
-      VITE_MAPBOX_ACCESS_TOKEN: ${{ vars.VITE_MAPBOX_ACCESS_TOKEN }}
-      VITE_MAPBOX_STYLE: ${{ vars.VITE_MAPBOX_STYLE || 'mapbox://styles/mapbox/streets-v12' }}
-      VITE_TAP_PUBLIC_KEY: ${{ vars.VITE_TAP_PUBLIC_KEY }}
+        working-directory: alabiq-web-main/mobile
 
     steps:
       - name: Check out repository
@@ -50,17 +49,25 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: alabiq-web-main/frontend/package-lock.json
+          cache-dependency-path: |
+            alabiq-web-main/package-lock.json
+            alabiq-web-main/mobile/package-lock.json
 
       - name: Show Apple toolchain
         run: xcodebuild -version
 
-      - name: Install frontend dependencies
+      # Web assets come from the Laravel app's Vite build (alabiq-web-main
+      # root). capacitor.config.json webDir = ../public/build.
+      - name: Install web (Laravel Vite) dependencies
+        working-directory: alabiq-web-main
+        run: npm ci
+
+      - name: Install Capacitor shell dependencies
         run: npm ci
 
       - name: Build web app and sync Capacitor
         run: |
-          npm run build
+          npm --prefix .. run build
           npx cap sync ios
 
       - name: Resolve Swift packages

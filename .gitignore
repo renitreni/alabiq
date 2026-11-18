@@ -4,3 +4,6 @@
 # Claude Code agent/config files (local machine only — settings.local.json etc.)
 .claude/
 ALABIQ-backup-*.bundle
+
+# Local staging/runtime artifacts (previously only in .git/info/exclude)
+.staging/

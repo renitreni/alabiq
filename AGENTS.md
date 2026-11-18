@@ -3,6 +3,14 @@
 > **Purpose:** single reference for AI coding sessions. Read this first; it replaces
 > re-discovering the system from scratch. Update it when the system changes.
 > Last global scan: **2026-11-18** · Branch at scan: `feat-laravel-testing-phase-d-e` · Laravel migration Phase A, C, D complete
+>
+> **⚠ 2026-11-19 — structural migration in progress (branch `feat/full-laravel`):**
+> `alabiq-web-main/` is now the Laravel 11 app root (the `laravel/` subdir is gone —
+> its contents moved up one level). The Node `backend/` and React `frontend/` are
+> parked in `archive/full-laravel-migration/` and will be deleted after the Blade
+> port (Phase 3). `alabiq-web-main/mobile/` holds the extracted Capacitor projects.
+> Sections below still describe the old three-part layout until Phase 4 rewrites
+> them — trust `alabiq-web-main/DOCKER.md` and `PLAN-full-laravel.md` for the new truth.
 
 ---
 
