@@ -166,7 +166,7 @@
                     aria-label="Close menu"></button>
             <div x-show="mobileNav" x-transition:enter="transition ease-out duration-200"
                  x-transition:enter-start="-translate-x-5 opacity-60" x-transition:enter-end="translate-x-0 opacity-100"
-                 class="absolute left-0 top-0 bottom-0 w-[min(20rem,86vw)] bg-[#0c1018] shadow-2xl flex flex-col">
+                 class="absolute left-0 top-0 bottom-0 w-[min(20rem,86vw)] bg-[#0b0f16] shadow-2xl flex flex-col">
                 <div class="h-16 px-4 flex items-center justify-between border-b border-white/5">
                     <div class="flex items-center gap-3">
                         <img src="/alabiq-icon.png" alt="" class="w-8 h-8 object-contain">
