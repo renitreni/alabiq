@@ -20,8 +20,10 @@
     --radius: 0.75rem;
 }
 
+/* No background-color here: unlayered rules override Tailwind v4 @layer
+   utilities, which broke dark pages (e.g. auth.login) whose bg-* class
+   lost to this rule. The canvas is white by default anyway. */
 body {
-    background-color: var(--color-brand-light);
     color: var(--color-brand-dark);
     font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     margin: 0;

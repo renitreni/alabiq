@@ -100,6 +100,49 @@ class PageController extends Controller
     }
 
     /**
+     * /demo/restaurant — sales demo of the scoped one-restaurant customer app.
+     * DEMO-ONLY: every dish and price below is invented fixture data (the same
+     * dishes the archived React demo used); the page performs no database
+     * reads or writes, and checkout is disabled client-side.
+     */
+    public function demoRestaurant()
+    {
+        return view('site.demo-restaurant', [
+            'restaurant' => [
+                'name' => "Aling Maria's Kitchen",
+                'cuisine' => 'Filipino',
+                'badge' => 'Popular',
+                'description' => 'Filipino favourites, delivered.',
+                'address' => 'Al Olaya, Riyadh',
+                'hours' => 'Daily 10:00–23:00',
+                'rating' => 4.8,
+                'deliveryTime' => '25–35 min',
+                'deliveryFee' => 5.0,
+                'minOrder' => 30.0,
+            ],
+            'menu' => [
+                ['name' => 'Mains', 'items' => [
+                    ['id' => 'demo-m1', 'name' => 'Chicken Adobo', 'description' => 'Slow-braised chicken in vinegar, soy, and bay leaves. Served with rice.', 'price' => 24.0],
+                    ['id' => 'demo-m2', 'name' => 'Beef Shawarma Plate', 'description' => 'Marinated beef, saffron rice, garlic sauce, and fresh pickles.', 'price' => 32.0],
+                    ['id' => 'demo-m3', 'name' => 'Mandi Half Kilo', 'description' => 'Fragrant spiced rice with tender half-kilo chicken and house sauce.', 'price' => 48.0],
+                    ['id' => 'demo-m4', 'name' => 'Chicken Biryani', 'description' => 'Layered basmati, fried onions, and raita on the side.', 'price' => 28.0],
+                    ['id' => 'demo-m5', 'name' => 'Mixed Grill', 'description' => 'Kebab, kofta, and tikka skewers with grilled vegetables.', 'price' => 65.0],
+                    ['id' => 'demo-m6', 'name' => 'Grilled Salmon Bowl', 'description' => 'Charred salmon over greens, quinoa, and citrus dressing.', 'price' => 55.0],
+                ]],
+                ['name' => 'Sides', 'items' => [
+                    ['id' => 'demo-s1', 'name' => 'Falafel Wrap', 'description' => 'Crisp falafel, tahini, and salad in a toasted wrap.', 'price' => 14.0],
+                    ['id' => 'demo-s2', 'name' => 'Hummus & Bread', 'description' => 'Creamy hummus with warm pita, olive oil, and sumac.', 'price' => 12.0],
+                ]],
+                ['name' => 'Drinks', 'items' => [
+                    ['id' => 'demo-d1', 'name' => 'Karak Chai', 'description' => 'Strong brewed chai with cardamom, served hot.', 'price' => 6.0],
+                    ['id' => 'demo-d2', 'name' => 'Mango Shake', 'description' => 'Blended fresh mango with milk and a touch of honey.', 'price' => 12.0],
+                    ['id' => 'demo-d3', 'name' => 'Soft Drink', 'description' => 'Chilled canned soda — cola, lemon, or orange.', 'price' => 5.0],
+                ]],
+            ],
+        ]);
+    }
+
+    /**
      * Shape a merchant for the marketing listing cards — the same fields the
      * React MarketingListingCard consumed.
      */
@@ -114,7 +157,7 @@ class PageController extends Controller
         if ($hoursToday) {
             $time = $now->format('H:i:s');
             $isOpen = $time >= $hoursToday->opens_at && $time <= $hoursToday->closes_at;
-            $hoursLabel = substr($hoursToday->opens_at, 0, 5) . '–' . substr($hoursToday->closes_at, 0, 5);
+            $hoursLabel = substr($hoursToday->opens_at, 0, 5).'–'.substr($hoursToday->closes_at, 0, 5);
         }
 
         return [
@@ -136,10 +179,11 @@ class PageController extends Controller
      */
     private function deliveryFeeLabel($value): ?string
     {
-        if (!is_numeric($value)) {
+        if (! is_numeric($value)) {
             return null;
         }
         $n = (float) $value;
-        return 'SAR ' . rtrim(rtrim(number_format($n, 2, '.', ''), '0'), '.');
+
+        return 'SAR '.rtrim(rtrim(number_format($n, 2, '.', ''), '0'), '.');
     }
 }

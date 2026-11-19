@@ -28,6 +28,10 @@ Route::get('/terms-of-service', [PageController::class, 'termsOfService'])->name
 Route::get('/cookie-preferences', [PageController::class, 'cookiePreferences'])->name('cookie-preferences');
 Route::get('/account-deletion', [PageController::class, 'accountDeletion'])->name('account-deletion');
 
+// Demo pages — unlisted, fixture data only, nothing here touches the database
+// (Blade port of the archived React /demo/restaurant sales-demo page).
+Route::get('/demo/restaurant', [PageController::class, 'demoRestaurant'])->name('demo.restaurant');
+
 // --- Session auth (admin portal) ----------------------------------------
 Route::get('/login', [AuthPageController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthPageController::class, 'login'])->middleware('throttle:20,1');

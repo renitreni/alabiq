@@ -326,6 +326,10 @@ for markup/copy: `archive/full-laravel-migration/frontend/`):
   `/services` + 3 subpages, `/support`, `/help-center`, and the legal pages
   (`/privacy-policy`, `/terms-of-service`, `/cookie-preferences`, `/account-deletion`).
   Views: `resources/views/site/`, layout `resources/views/layouts/site.blade.php`.
+  Plus `/demo/restaurant` (2026-11-19) — unlisted sales demo of the
+  one-restaurant customer app: fixture-only menu (no DB reads/writes) served
+  by `PageController::demoRestaurant`, cart is in-memory Alpine state, checkout
+  disabled. Blade port of the archived React `/demo/restaurant` page.
 - **Admin portal** — session-guard login at `/login` (`AuthPageController`), then
   `/admin*` behind the `admin.web` middleware (`RequireWebAdmin`, redirects guests
   to `/login`). `Admin\PagesController` renders dashboard, bookings, drivers
