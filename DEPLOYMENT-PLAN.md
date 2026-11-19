@@ -165,6 +165,20 @@ was also deleted by the same rsync). **Future deploys must exclude
 (banner + fixture dishes render), `/services/food` 200, new CSS asset
 `app-DtZwm6h1.css` serving, `/api/health` 503 degraded (by design).
 
+### 2026-11-19 (evening, hotfix) — Admin shell 500 fix ✅
+
+Commit `9f7f4e9` (null-safe `$user->email` in `layouts/admin.blade.php` — the
+portal shell 500'd when rendered without an authenticated session, e.g. the
+standalone shell render; normal `/admin` traffic redirects to `/login` and was
+never affected). Also carried `2caa373` (mobile drawer backdrop color). Blade-only
+change — no Vite rebuild, no composer, no migrations. rsync app root with the
+§10 `.htaccess*` exclude (dry-run verified: 5 files, `.htaccess` untouched),
+`view:clear` → `view:cache` on host (49 compiled views).
+
+**HTTPS smoke after (all green):** `/` 200, `/login` 200, `/demo/restaurant` 200,
+`/services/food` 200, `/admin` 302 → `/login` (no 500), `/api/health` 503
+degraded (by design).
+
 ### 2026-11-19 (PM) — Shared-hosting structural migration: app root flattened to `public_html/` ✅
 
 Aligned the live host with the repo flattening (commit `7b74221`): the Laravel app moved
