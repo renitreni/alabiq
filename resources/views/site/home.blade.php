@@ -118,8 +118,7 @@
             </div>
 
             <div class="relative w-full flex justify-center lg:justify-end order-1 lg:order-2 py-4 lg:py-8">
-                <img src="/promo/zumba-riyadh.jpg" alt="Alabiq delivery in Riyadh"
-                     class="relative z-10 w-full max-w-md rounded-[2rem] border border-brand-border shadow-2xl shadow-brand-orange/10 object-cover">
+                @include('site._phone_mockup')
 
                 <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 lg:left-auto lg:right-6 lg:translate-x-0 z-20 flex items-center gap-2.5 bg-white border border-brand-border rounded-2xl px-4 py-3 shadow-xl">
                     <span class="w-9 h-9 rounded-xl bg-brand-orange/10 flex items-center justify-center">
@@ -129,6 +128,23 @@
                         <p class="text-xs font-black text-brand-black leading-tight">Verified partners</p>
                         <p class="text-[10px] text-brand-grey mt-0.5">Every restaurant is vetted</p>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="absolute bottom-0 inset-x-0 pointer-events-none" aria-hidden="true">
+            <div class="max-w-7xl mx-auto px-6 md:px-16 lg:px-20 pb-5 flex items-center gap-6 sm:gap-10">
+                <div class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-brand-grey/70">
+                    <svg class="w-3.5 h-3.5 text-brand-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+                    Fresh from the kitchen
+                </div>
+                <div class="hidden sm:flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-brand-grey/70">
+                    <svg class="w-3.5 h-3.5 text-brand-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>
+                    Riders on standby
+                </div>
+                <div class="hidden md:flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-brand-grey/70">
+                    <svg class="w-3.5 h-3.5 text-brand-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg>
+                    Open late, every day
                 </div>
             </div>
         </div>
