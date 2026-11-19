@@ -253,7 +253,7 @@ The old checkout layout, topology, and cutover procedure are in `DEPLOYMENT-PLAN
   production moved to shared hosting (deploy = rsync + artisan, §6). Kept for
   rollback/reference.
 - Active branch: **`main`** — `feat/full-laravel` was fast-forwarded into it on
-  2026-11-19 (`aafc3d3..cb13510`); both branches point at the same commit:
+  2026-11-19 (`aafc3d3..cb13510`) and deleted after the merge; only `main` remains:
   - `7b74221 refactor!: full-Laravel takeover — laravel/ moves to app root, Node backend + React frontend archived`
   - `175fa11 feat!: pusher.com realtime replaces Node SSE service; mobile implementation removed`
   - `f4a7f03 fix(shared-hosting): close schema gaps and pgsql-only queries for MariaDB deploy`
