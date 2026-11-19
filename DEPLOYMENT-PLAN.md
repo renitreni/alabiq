@@ -145,6 +145,26 @@ New checkout at `/opt/SmartMappiaa/alabiq-docker` (old checkout left untouched f
 
 ## 10. Implementation log
 
+### 2026-11-19 (evening) — Routine redeploy: demo restaurant page + dark login/admin shell ✅
+
+Commits `3ec94e2` (demo restaurant, login redesign, UserSeeder, app.css fix),
+`f9de3d8` (admin dark shell). No migrations (none changed — UserSeeder is
+dev/test only and was **not** seeded on prod). Local `npm run build`, rsync
+app root, alt-php84 `composer install` (no-op), `config:cache` → `view:cache`
+→ `route:cache` (storage dirs already existed; 49 compiled views, `routes-v7.php`).
+
+**⚠️ New gotcha — rsync `--delete` killed the docroot `.htaccess`.** It is
+host-side only (not in the repo), and the exclude list didn't cover it, so the
+first smoke came back 403/404 on every route until it was restored from
+`.builds/backup-20261119-structural/app.tar.gz` (pre-migration copy — re-applied
+the `alabiq-web-main/public` → `public` sed; the `.htaccess.bak-20261119` copy
+was also deleted by the same rsync). **Future deploys must exclude
+`--exclude='.htaccess'` (or exclude `.htaccess*`).**
+
+**HTTPS smoke after (all green):** `/` 200, `/login` 200, `/demo/restaurant` 200
+(banner + fixture dishes render), `/services/food` 200, new CSS asset
+`app-DtZwm6h1.css` serving, `/api/health` 503 degraded (by design).
+
 ### 2026-11-19 (PM) — Shared-hosting structural migration: app root flattened to `public_html/` ✅
 
 Aligned the live host with the repo flattening (commit `7b74221`): the Laravel app moved
