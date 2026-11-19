@@ -2,7 +2,7 @@
 
 > **Purpose:** single reference for AI coding sessions. Read this first; it replaces
 > re-discovering the system from scratch. Update it when the system changes.
-> Last global scan: **2026-11-19** · Branch at scan: `feat/full-laravel` · **Full-Laravel
+> Last global scan: **2026-11-19** · Branch at scan: `main` · **Full-Laravel
 > takeover landed** — the repo root IS the Laravel 11 app; the Node `backend/`, React
 > `frontend/`, Node realtime SSE service, and Capacitor mobile apps were removed
 > (parked in `archive/full-laravel-migration/`, deleted in Phase 4). **Realtime is
@@ -252,7 +252,8 @@ The old checkout layout, topology, and cutover procedure are in `DEPLOYMENT-PLAN
   `/opt/SmartMappiaa/deploy.sh`; scripts at `deploy/`. **Inactive since 2026-11-19** —
   production moved to shared hosting (deploy = rsync + artisan, §6). Kept for
   rollback/reference.
-- Active branch: `feat/full-laravel` (2026-11-19) — full-Laravel takeover:
+- Active branch: **`main`** — `feat/full-laravel` was fast-forwarded into it on
+  2026-11-19 (`aafc3d3..cb13510`); both branches point at the same commit:
   - `7b74221 refactor!: full-Laravel takeover — laravel/ moves to app root, Node backend + React frontend archived`
   - `175fa11 feat!: pusher.com realtime replaces Node SSE service; mobile implementation removed`
   - `f4a7f03 fix(shared-hosting): close schema gaps and pgsql-only queries for MariaDB deploy`
