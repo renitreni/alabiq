@@ -374,8 +374,11 @@
             <div class="relative w-full">
                 <div class="absolute -inset-4 bg-brand-orange/15 rounded-[2rem] blur-2xl opacity-60 pointer-events-none"></div>
                 <div class="relative w-full aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-black/40">
-                    <video src="/media/alabiq-ads.mp4" autoplay loop muted playsinline
-                           class="w-full h-full object-cover"></video>
+                    {{-- The original promo video (/media/alabiq-ads.mp4) never existed in any
+                         repo, archive, or host copy — it 404'd since the Blade port. Replaced
+                         with the on-brand full logo lockup (dark-background variant). --}}
+                    <img src="/alabiq-logo-dark.png" alt="Alabiq — delivery across Riyadh"
+                         class="w-full h-full object-contain bg-brand-dark p-8 md:p-12" />
                     <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/70 via-transparent to-brand-dark/20 pointer-events-none"></div>
                 </div>
             </div>
