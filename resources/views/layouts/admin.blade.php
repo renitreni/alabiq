@@ -91,7 +91,7 @@
                             {{ strtoupper(substr($user->email ?? 'A', 0, 1)) }}
                         </div>
                         <div class="min-w-0 flex-1 hidden lg:block">
-                            <div class="text-xs font-semibold text-white truncate">{{ $user->email }}</div>
+                            <div class="text-xs font-semibold text-white truncate">{{ $user->email ?? 'Unknown user' }}</div>
                             <div class="text-[10px] text-white/45 font-medium mt-0.5">Administrator</div>
                         </div>
                     </div>
@@ -192,7 +192,7 @@
                     @endforeach
                 </nav>
                 <div class="p-4 border-t border-white/5">
-                    <div class="text-xs text-white/45 truncate mb-3">{{ $user->email }}</div>
+                    <div class="text-xs text-white/45 truncate mb-3">{{ $user->email ?? 'Unknown user' }}</div>
                     <form method="POST" action="/logout">
                         @csrf
                         <button type="submit" class="w-full flex items-center justify-center gap-2 text-sm font-semibold text-white/70 py-2.5 rounded-xl border border-white/10 cursor-pointer">
