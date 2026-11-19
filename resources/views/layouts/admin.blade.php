@@ -44,7 +44,7 @@
         $user = auth()->guard('web')->user();
     @endphp
 
-    <div class="min-h-screen flex bg-[#0c1018]" x-data="{ mobileNav: false }">
+    <div class="min-h-screen flex bg-[#0b0f16]" x-data="{ mobileNav: false }">
 
         {{-- Sidebar --}}
         <aside class="hidden md:flex w-[76px] lg:w-[260px] shrink-0 flex-col border-r border-white/5">
@@ -109,28 +109,34 @@
             </div>
         </aside>
 
-        <div class="flex-1 flex flex-col min-w-0 bg-[#eef1f6]">
-            <header class="sticky top-0 z-30 bg-[#eef1f6]/90 backdrop-blur-xl border-b border-black/5">
+        <div class="flex-1 flex flex-col min-w-0 bg-[#0b0f16] relative">
+            {{-- Faint brand glow behind the content, echoes the login backdrop --}}
+            <div class="absolute inset-x-0 top-0 h-[420px] pointer-events-none" aria-hidden="true">
+                <div class="absolute -top-24 right-0 w-[420px] h-[420px] rounded-full bg-brand-orange/[0.07] blur-[120px]"></div>
+                <div class="absolute -top-16 left-1/4 w-[360px] h-[360px] rounded-full bg-brand-red/[0.05] blur-[110px]"></div>
+            </div>
+
+            <header class="sticky top-0 z-30 bg-[#0b0f16]/85 backdrop-blur-xl border-b border-white/5">
                 <div class="min-h-16 lg:min-h-[72px] px-3 sm:px-5 md:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
                         <button type="button" @click="mobileNav = true"
-                                class="md:hidden p-2.5 rounded-xl bg-white shadow-sm border border-black/5 cursor-pointer"
+                                class="md:hidden p-2.5 rounded-xl bg-white/10 border border-white/10 shadow-sm cursor-pointer"
                                 aria-label="Open menu">
-                            <svg class="w-5 h-5 text-brand-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
                             </svg>
                         </button>
                         <div class="min-w-0">
-                            <h1 class="text-lg sm:text-xl md:text-2xl font-black text-brand-black tracking-tight truncate">
+                            <h1 class="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight truncate">
                                 {{ $copy[0] }}
                             </h1>
-                            <p class="hidden sm:block text-xs sm:text-sm text-brand-grey truncate">{{ $copy[1] }}</p>
+                            <p class="hidden sm:block text-xs sm:text-sm text-white/40 truncate">{{ $copy[1] }}</p>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
                         <a href="/" target="_blank"
-                           class="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-brand-dark bg-white border border-black/5 px-3 py-2.5 rounded-xl shadow-sm hover:border-brand-orange/30 hover:text-brand-orange transition-colors">
+                           class="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-white/60 bg-white/[0.06] border border-white/10 px-3 py-2.5 rounded-xl hover:border-brand-orange/40 hover:text-brand-orange transition-colors">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                             </svg>
@@ -148,7 +154,7 @@
                 </div>
             @endif
 
-            <main class="flex-1 px-3 sm:px-5 md:px-6 lg:px-8 py-5 md:py-7 w-full max-w-[1400px] pb-[max(2rem,env(safe-area-inset-bottom))]">
+            <main class="relative flex-1 px-3 sm:px-5 md:px-6 lg:px-8 py-5 md:py-7 w-full max-w-[1400px] pb-[max(2rem,env(safe-area-inset-bottom))]">
                 @yield('content')
             </main>
         </div>
