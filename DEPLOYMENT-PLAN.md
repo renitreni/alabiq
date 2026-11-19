@@ -145,6 +145,46 @@ New checkout at `/opt/SmartMappiaa/alabiq-docker` (old checkout left untouched f
 
 ## 10. Implementation log
 
+### 2026-11-19 (PM) — Shared-hosting structural migration: app root flattened to `public_html/` ✅
+
+Aligned the live host with the repo flattening (commit `7b74221`): the Laravel app moved
+from `public_html/alabiq-web-main/` up to the domain docroot `public_html/` itself —
+the host now mirrors the repo 1:1 (repo root = app root = docroot).
+
+**Procedure executed (all via `ssh -p 65002 u805024096@178.16.135.22`):**
+
+1. **Backup:** `tar -czf ~/domains/alabiq.yaramay.online/.builds/backup-20261119-structural/app.tar.gz`
+   (whole `alabiq-web-main/` incl. vendor + `.env` + `public_html/.htaccess`; verified
+   12,499 vendor files before touching anything).
+2. **Env:** `mv alabiq-web-main/.env public_html/.env` (compose-style env now at app root).
+3. **Rsync** from local repo root (excl. `.git .env* vendor node_modules storage archive
+   .phpunit.cache bootstrap/cache/*.php`, incl. `.env.example`):
+   `rsync -az ./ u805024096@178.16.135.22:~/domains/alabiq.yaramay.online/public_html/`
+4. **Deps/migrations:** alt-php84 `composer install --no-dev --optimize-autoloader
+   --ignore-platform-req=ext-pdo_pgsql --ignore-platform-req=ext-redis` (green),
+   `artisan migrate --force` (no-op), `storage` copied from old app (sessions preserved).
+5. **Cutover:** `.htaccess` `RewriteRule … alabiq-web-main/public/$1` → `public/$1`
+   (old file kept at `.htaccess.bak-20261119`).
+6. **Cleanup:** old `alabiq-web-main/` removed after smoke (backup tar retained).
+
+**Two gotchas hit (documented for the next deploy):**
+
+- **`config:cache` BEFORE storage dirs exist → empty `view.compiled`.** This repo ships
+  no `config/view.php`; Laravel's default resolves `view.compiled` via
+  `realpath(storage_path('framework/views'))`, which returns `false` when the dir is
+  missing and caches as empty → every Blade render dies with
+  *"Please provide a valid cache path"* (HTTP 500 on `/`, API still fine). **Order
+  matters: create `storage/framework/{cache/data,sessions,views}` first, then
+  `config:cache` → `view:cache` → `route:cache`.**
+- **rsync excludes `storage/`** — first request then fails on session writes. Migrate
+  the old app's storage (`cp -a old/storage/. storage/`) instead of starting empty.
+
+**HTTPS smoke after (all green):** `/` 200 (Blade welcome, `/build/` Vite assets
+resolving), `/services` `/support` `/privacy-policy` `/login` 200, `/api/health` 503
+degraded (by design — no Redis), `/api/food/restaurants` 200, `/api/auth/session` 401,
+login probe 401, http→https 301. Site served from the new root for the final smoke;
+old dir deleted; rollback = restore tar + `.htaccess.bak-20261119`.
+
 ### 2026-11-19 — Shared-hosting redeploy: full-Laravel structure + pusher (feat/full-laravel) ✅
 
 The host was migrated from the old three-part layout (`alabiq-web-main/laravel/`) to the new

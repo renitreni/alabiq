@@ -7,3 +7,17 @@ ALABIQ-backup-*.bundle
 
 # Local staging/runtime artifacts (previously only in .git/info/exclude)
 .staging/
+.DS_Store
+
+# --- Laravel (root .gitignore lost in the full-Laravel move; restored 2026-11-19) ---
+.env
+.env.*
+!.env.example
+.alabiq-server-credentials.env
+/.phpunit.cache
+/node_modules
+/vendor
+/public/build
+/public/hot
+/storage/*.key
+/bootstrap/cache/*.php

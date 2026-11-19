@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+    /* Logo-inspired brand colors (ported from the React frontend theme) */
+    --color-brand-orange: #FF7E21;
+    /* brand-orange is 2.54:1 against white — fine as a large accent, below
+       WCAG AA for text sitting on it. Darkened hue at 5.0:1 for surfaces
+       that must carry readable white copy. */
+    --color-brand-orange-deep: #B4530F;
+    --color-brand-red: #E62B25;
+    --color-brand-black: #111827;
+    --color-brand-dark: #1F2937;
+    --color-brand-grey: #6B7280;
+    --color-brand-light: #FFFFFF;
+    --color-brand-muted: #F9FAFB;
+    --color-brand-surface: #F3F4F6;
+    --color-brand-border: #E5E7EB;
+    --color-brand-warm: #FFF7F0;
+
+    --radius: 0.75rem;
+}
+
+body {
+    background-color: var(--color-brand-light);
+    color: var(--color-brand-dark);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+}
+
+@keyframes partner-marquee {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+.partner-marquee-track {
+    animation: partner-marquee 32s linear infinite;
+}
+
+.partner-marquee-track:hover {
+    animation-play-state: paused;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+@keyframes admin-live-dot {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.35;
+    }
+}
+
+.admin-live-dot {
+    animation: admin-live-dot 1.4s ease-in-out infinite;
+}

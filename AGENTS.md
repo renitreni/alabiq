@@ -2,17 +2,14 @@
 
 > **Purpose:** single reference for AI coding sessions. Read this first; it replaces
 > re-discovering the system from scratch. Update it when the system changes.
-> Last global scan: **2026-11-18** · Branch at scan: `feat-laravel-testing-phase-d-e` · Laravel migration Phase A, C, D complete
->
-> **⚠ 2026-11-19 — structural migration in progress (branch `feat/full-laravel`):**
-> `alabiq-web-main/` is now the Laravel 11 app root (the `laravel/` subdir is gone —
-> its contents moved up one level). The Node `backend/`, React `frontend/`, Node
-> realtime SSE service, and the Capacitor mobile apps (incl. the iOS CI workflow)
-> are removed; backend/frontend source is parked in `archive/full-laravel-migration/`
-> and will be deleted after the Blade port (Phase 3). **Realtime is pusher.com**
-> (`BROADCAST_CONNECTION=pusher`, `PUSHER_APP_*` in `.env`).
-> Sections below still describe the old three-part layout until Phase 4 rewrites
-> them — trust `alabiq-web-main/DOCKER.md` and `PLAN-full-laravel.md` for the new truth.
+> Last global scan: **2026-11-19** · Branch at scan: `feat/full-laravel` · **Full-Laravel
+> takeover landed** — the repo root IS the Laravel 11 app; the Node `backend/`, React
+> `frontend/`, Node realtime SSE service, and Capacitor mobile apps were removed
+> (parked in `archive/full-laravel-migration/`, deleted in Phase 4). **Realtime is
+> pusher.com** (`BROADCAST_CONNECTION=pusher`, `PUSHER_APP_*` in `.env`).
+> **Production runs on Hostinger shared hosting** (Apache + MariaDB) — NOT the VPS;
+> the VPS Docker stack is retired as the production host (see below and
+> `DEPLOYMENT-PLAN.md` §10, 2026-11-19 entry).
 
 ---
 
@@ -25,328 +22,328 @@ one driver fleet, three service lines:
 2. **Food Delivery** — restaurant ordering within 15 km (live)
 3. **Ecommerce** — partner-store goods (**feature-flagged off** by default via `SHOP_ENABLED`)
 
-Live: `https://alabiq.com` + `https://api.alabiq.com`
-Server: Hostinger VPS `srv1777854` (`root@187.127.100.178`, Ubuntu, Docker 29 + Compose v5).
+**Live (full-Laravel, since 2026-11-19):** `https://alabiq.yaramay.online` — Hostinger
+**shared hosting** (`ssh -p 65002 u805024096@178.16.135.22`), docroot
+`/home/u805024096/domains/alabiq.yaramay.online/public_html`. Deploy procedure:
+`DEPLOYMENT-PLAN.md` §10 (2026-11-19 entry). The former production host — Hostinger VPS
+`srv1777854` (`root@187.127.100.178`, Docker 29 + Compose v5, `alabiq.com` /
+`api.alabiq.com`, Express-era) — is **no longer production**; its push-to-deploy
+conduit is inactive.
 
 ---
 
-## 2. Current architecture (as of 2026-11 — post-Supabase)
+## 2. Current architecture (as of 2026-11 — full-Laravel)
 
-**The platform migrated OFF Supabase in Oct 2026.** Production is now a self-contained
-Docker stack. Anything still describing Supabase (`archive/README-legacy-supabase.md`,
-parts of `backend/README.md`, `archive/PROJECT-ANALYSIS-2026-10-06.md`) is **stale** —
-trust `DOCKER.md`, `DEPLOYMENT-PLAN.md`, and this file instead.
+**The platform is now a single Laravel 11 application.** The Oct-2026 Express/React
+stack (and everything Supabase-era before it) is archived, not deleted yet
+(`archive/full-laravel-migration/`, removed in Phase 4). Anything describing
+Express, React, SSE `/api/events`, or Supabase is **stale** — trust `DOCKER.md`,
+`DEPLOYMENT-PLAN.md`, `PLAN-full-laravel.md`, and this file instead.
 
-### Production Stack (Live)
-
-| Layer | Technology |
-|---|---|
-| Frontend | React 19, Vite 8 (rolldown), Tailwind 4, React Router 7, shadcn-style (radix-slot + CVA + tailwind-merge), framer-motion, sweetalert2, lucide-react |
-| Mobile | Capacitor 8 — Android (appId `com.alabiq`) + iOS; native geolocation plugin |
-| Backend | Node ≥ 20, Express 4, **plain JS CommonJS, no build step** |
-| Data | **PostgreSQL 16** (Docker) via `pg` + `pg-copy-streams`; app-owned auth (`app_users`, scrypt hashes, `app_sessions` in Postgres) |
-| Realtime | Dedicated `realtime` container (Node + Redis pub/sub, port 4100 internal); clients consume **SSE via `/api/events`** |
-| Object storage | **MinIO** (S3-compatible, via `@aws-sdk/client-s3`) — payment proofs (private), merchant images, driver docs, avatars |
-| Maps | Google Maps Platform (browser key; Routes/Places/Geocoding proxied server-side). `mapbox-gl` still a declared dep — cleanup debt |
-| Payments | STC Pay manual bank transfer (live path, proof upload + admin verify); Tap Payments (env-gated, off by default) |
-| Mail | SMTP via nodemailer (password reset) |
-| Push | web-push (VAPID keys) |
-| CI | GitHub Actions: unsigned iOS simulator build (`.github/workflows/ios-build.yml`) |
-| Legacy | PM2 process `alabiq-api` on `127.0.0.1:4000` kept for rollback only |
-
-### Laravel Migration (In Progress — **Not Yet Deployed**)
-
-A Laravel 11 migration is under development in `alabiq-web-main/laravel/` to replace the Node/Express backend. **This is not yet in production.**
+### Application stack (one codebase, two runtimes)
 
 | Layer | Technology |
 |---|---|
-| Backend | **Laravel 11**, PHP 8.3+, Octane (Swoole) planned |
-| Data | Same PostgreSQL 16 (shared), migrations in `laravel/database/migrations/` |
-| Auth | Laravel Sanctum (API tokens) + custom scrypt hasher (`App\Hashing\ScryptHasher`) for password compatibility |
-| Realtime | Laravel Reverb (WebSocket) planned; SSE fallback |
-| Object storage | MinIO via `league/flysystem-aws-s3-v3` (same buckets) |
-| Maps | Mapbox (configured in `config/services.php`) |
-| Payments | STC Pay + Tap Payments (same flow, new controllers) |
-| Queue | Redis + `database` driver for background jobs |
-| Testing | PHPUnit (backend unit/feature), Pest planned |
+| Backend | **Laravel 11**, PHP 8.2+ (PSR-12, strict types where practical) |
+| Web | **Blade** (public marketing site + admin portal) built by Vite + Tailwind 4 + Alpine.js; `routes/web.php` |
+| API | `routes/api.php` — Sanctum tokens (default guard `api`), mirrors the old Express contracts |
+| Auth | App-owned sessions + **scrypt** hashes via `App\Hashing\ScryptHasher`; `AppUser::getAuthPasswordName()` returns `password_hash`; roles resolved server-side from `profiles` + `ADMIN_EMAILS` |
+| Realtime | **pusher.com** (`pusher/pusher-php-server`, `BROADCAST_CONNECTION=pusher`); the Node SSE service and `/api/events` endpoint were removed on `feat/full-laravel` |
+| Maps | Mapbox (`MAPBOX_ACCESS_TOKEN`) |
+| Payments | STC Pay manual bank transfer (live path, proof upload + admin verify); Tap Payments (env-gated) |
+| Push | `minishlink/web-push` (VAPID keys) |
+| Tests | PHPUnit 11 — Unit tests (pure logic) + Feature tests on a dedicated `alabiq_test` pgsql DB (auto-created by `tests/bootstrap.php`) |
 
-**Migration status (as of 2026-11-18):**
-- ✅ **Phase A complete**: Models (23), Migrations (20 tables), Middleware (11), Routes (`routes/api.php`), Base controllers (11), Services (6), Config, Docker compose
-- 🔄 **Phase B in progress**: 12 controllers partially implemented (most routes return 501 stubs)
-- ✅ **Phase C complete**: Money services ported — FareService, FoodMoneyService, ShopMoneyService, VatService, AppSessionsService all implemented with full logic parity
-- ✅ **Phase D complete**: PHPUnit test suite — **97 unit tests passing** covering VatService, FareService, FoodMoneyService, ShopMoneyService, AppSessionsService (pure logic tests). Feature tests created for DB-dependent services (require PostgreSQL test DB)
-- ⏳ **Phase E pending**: Docker build/test, route-by-route cutover from Express
+- **Docker runtime** (local dev; formerly the VPS prod stack): PostgreSQL 16, Redis
+  (cache/queue), MinIO (S3-compatible object storage), `queue-worker` +
+  `scheduler` containers — `docker-compose.yml` at root, see `DOCKER.md`.
+- **Shared-hosting runtime** (THE production host): Apache + **MariaDB** (no
+  PostgreSQL/Redis/MinIO), PHP pinned to 8.4 (`SetHandler application/x-lsphp84` in
+  `public/.htaccess`; CLI `/opt/alt/php84/usr/bin/php`), file cache/sessions, sync
+  queue. `/api/health` returns **503 degraded there by design** (`db: connected`,
+  `redis: error`).
 
-**Key constraints for migration:**
-- Must maintain **password hash compatibility** (scrypt via `ScryptHasher`)
-- Must share **same PostgreSQL schema** (Laravel migrations mirror existing tables)
-- Must support **same API contracts** (routes/api.php mirrors Express routes)
-- Feature flag `SHOP_ENABLED` gated on both stacks
-- Zero-downtime cutover via nginx upstream switching
+### Production — shared hosting (live since 2026-11-19)
 
-### Shared-hosting deployment (2026-11-18 — second target, Laravel-only)
+Hostinger shared hosting: `ssh -p 65002 u805024096@178.16.135.22`. **The app root IS
+the domain docroot** `/home/u805024096/domains/alabiq.yaramay.online/public_html/`
+(mirrors the repo 1:1 since the 2026-11-19 structural migration). Migrations are
+driver-aware (pgsql-only statements skipped on mysql). Deploy = rsync the app root +
+alt-php84 `composer install` + `artisan migrate/seed` + cache rebuild — full
+procedure, ordering gotchas (storage dirs before `config:cache`), and HTTPS smoke
+results: `DEPLOYMENT-PLAN.md` §10 (2026-11-19 PM entry is the current one).
 
-A separate **Hostinger shared-hosting** deployment exists for the Laravel migration:
-`ssh -p 65002 u805024096@178.16.135.22`, docroot
-`/home/u805024096/domains/alabiq.yaramay.online/public_html` (whole repo uploaded).
-Apache + **MariaDB only** (no PostgreSQL/Node/Redis/MinIO) — Laravel runs on MySQL with
-file cache/sessions and sync queue. Web PHP pinned to 8.4 via `laravel/public/.htaccess`
-handler (`SetHandler application/x-lsphp84`); CLI via `/opt/alt/php84/usr/bin/php`.
-Migrations are now driver-aware (pgsql-only statements skipped on mysql). Full details:
-DEPLOYMENT-PLAN.md §10 (2026-11-18 entry).
+**Known gaps on this host (accepted, 2026-11-19):** no Redis (degraded health by
+design), no MinIO/S3, no SMTP, `SHOP_ENABLED=false`, payments controllers are
+Phase-2.2 stubs, `PUSHER_APP_*` unset (broadcasting configured, not publishing).
 
-### Production topology (DEPLOYMENT-PLAN.md §5 + 2026-11-13 entry — the current truth)
+### Deploy conduit — VPS push-to-deploy (**INACTIVE** since 2026-11-19)
 
-```
-alabiq.yaramay.online → nginx static dist (/var/www/alabiq, copied from the frontend image)
-                      /api/ → nginx → 127.0.0.1:4001 (docker api)   [SSE-safe /api/events block kept]
-live checkout:  /opt/SmartMappiaa/alabiq-docker  (compose at alabiq-web-main/, project pinned: -p smartmappia-web-main)
-old checkout:  /opt/SmartMappiaa/smartmappiaa-docker  (kept as rollback, do not delete)
-compose network      → postgres, redis, minio, realtime, api, worker  [private, no host ports]
-```
-
-⚠ Production DB roles still use the **old names** (`smartmappia` / `smartmappia_app` / db `smartmappia`) — pinned in the live checkout's `.env`. Deploy = force-push branch to the server bare repo + `git reset --hard` + rebuild; full procedure in DEPLOYMENT-PLAN.md (2026-11-13 entry).
+Server bare repo `root@187.127.100.178:/opt/SmartMappiaa/smartmappiaa.git`, branch
+`full` (**force-push** — unrelated histories) → `post-receive` →
+`/opt/SmartMappiaa/deploy.sh`. Scripts live at `deploy/post-receive` +
+`deploy/server-deploy.sh` (rewritten for full-Laravel 2026-11-19, but mothballed
+with the VPS as production). Kept for rollback/reference only — production deploys
+go through the shared-hosting procedure above. History: `DEPLOYMENT-PLAN.md` §10.
 
 ---
 
 ## 3. Repository layout
 
 ```
-ALABIQ/                        ← git repo root (work here)
+ALABIQ/                        ← git repo root = Laravel 11 app root (work here)
 ├── AGENTS.md                        ← this file (canonical system guide)
-├── README.md                        ← new landing page pointing here
-├── archive/                         stale docs moved here 2026-11-12:
-│   ├── README-legacy-supabase.md    ⚠ pre-Docker install guide — historical only
-│   └── PROJECT-ANALYSIS-2026-10-06.md ⚠ pre-migration analysis — historical only
-├── DEPLOYMENT-PLAN.md               ✅ current: cutover plan, topology, env plan, incident log
+├── README.md                        ← repo landing / orientation
+├── DEPLOYMENT-PLAN.md               ✅ topology, cutover, env plan, incident log
+├── DOCKER.md                        ✅ current: full-Laravel Docker stack (local dev)
+├── PLAN-full-laravel.md             ✅ migration plan + addenda (phases, risks)
 ├── .alabiq-server-credentials.env   SSH creds for prod VPS (git-excluded; never commit)
-├── ALABIQ-backup-*.bundle     71 MB git bundle backup (gitignored)
-├── .tmp-server-src/                 ad-hoc copies of FoodAdmin.jsx / ShopAdmin.jsx (Oct 28)
-└── alabiq-web-main/            ← the actual application
-    ├── docker-compose.yml           full dev stack; publishes api 127.0.0.1:4001:4000
-    ├── docker-compose.prod.yml      prod overlay (same port mapping; no frontend container)
-    ├── DOCKER.md                    ✅ current: stack description + migration status
-    ├── .env.docker.example          compose vars (Postgres, MinIO, realtime token)
-    ├── postgres/init/               creates alabiq_app role
-    ├── realtime/                    standalone SSE/realtime service (Node, Redis-backed)
-    ├── store-assets/
-    ├── backend/
-    │   ├── server.js                entry: dotenv → app.listen + dispatch sweeper
-    │   ├── app.js                   helmet/CORS/rate-limit + 16 route mounts
-    │   ├── api/index.js             serverless (Vercel) entry — legacy, app.js shared
-    │   ├── routes/        (16)      auth, bookings, driver, food, shop, payments, files, events…
-    │   ├── controllers/   (~25)     thin HTTP in/out; food/ and shop/ subdirs
-    │   ├── repositories/  (~25)     ★ data-access layer (newer than old docs reflect)
-    │   ├── lib/           (49)      business logic: fare, foodMoney, shopMoney, money, vat,
-    │   │                            #   ledger (double-entry), dispatch, eta, geo, googleRoutes,
-    │   │                            #   payments, tap, savedCards, stock, merchantHours, webPush…
-    │   ├── middleware/    (4)       auth guards, foodAuth, idempotency, rateLimiters
-    │   ├── migrations/postgres/     ✅ tracked baseline 0001–0007 (0005 = auth_sessions)
-    │   ├── migrations/reconstructed/ ⚠ old Supabase-era SQL, reference only
-    │   ├── scripts/                 seeds, checks, demo simulators, supabase import ETL
-    │   └── test/          (49)      node:test unit tests (money, fare, vat, repos…)
-    ├── laravel/                     ← **Laravel 11 migration (in progress, not deployed)**
-    │   ├── app/
-    │   │   ├── Http/Controllers/    (11 done, 12 missing — Phase B)
-    │   │   ├── Models/              (23 Eloquent models)
-    │   │   ├── Services/            (6: Fare, AppSessions, Email, FileGrants, ObjectStorage)
-    │   │   ├── Hashing/ScryptHasher # password compatibility
-    │   │   └── Providers/           (5: App, Auth, Hash, Route, HashServiceProvider)
-    │   ├── bootstrap/app.php        Octane-ready bootstrap
-    │   ├── config/                  (14 config files incl. alabiq.php, auth.php, sanctum.php)
-    │   ├── database/
-    │   │   ├── migrations/          (20 tables, mirror Express schema)
-    │   │   └── seeders/             (3: Admin, ReferenceData, DatabaseSeeder)
-    │   ├── routes/
-    │   │   ├── api.php              (full API route map, mirrors Express)
-    │   │   └── console.php          (artisan commands)
-    │   ├── docker-compose.laravel.yml   dev stack (php, nginx, postgres, redis, minio)
-    │   ├── Dockerfile               php 8.3 + swoole + octane
-    │   ├── nginx/                   nginx config for Laravel
-    │   └── tests/                   (empty — Phase D)
-    └── frontend/
-        ├── src/main.jsx             all route definitions
-        ├── src/App.jsx              marketing landing
-        ├── src/sections/ pages/ components/   public site
-        └── src/portal/              authenticated app
-            ├── auth/ (23)           login, signup, forgot/reset, mobile variants
-            ├── user/ (8)            home, book, pay, track, profile, transactions…
-            ├── driver/ (3)          dispatch, driver page, verification
-            ├── merchant/ (6)        food + shop merchant dashboards/orders
-            ├── admin/ (17)          layout, dashboard, bookings, drivers, food/shop admin,
-            │                      #   accounts, reports, errors, settings, RestaurantOrders
-            ├── food/ (8)  shop/ (6)
-            ├── demo/                demo pages (incl. /admin/ferdz)
-            ├── components/ (22)     LocationPicker, NotificationBell…
-            └── lib/ (28)            AuthProvider, api client, gatewayClient, geo, sessionStore…
+├── app/
+│   ├── Console/  Jobs/  Support/    scheduled commands, queued jobs, helpers
+│   ├── Exceptions/Handler.php
+│   ├── Hashing/ScryptHasher.php     scrypt compatibility with legacy Node hashes
+│   ├── Http/Controllers/            Admin/ AdminController AuthController AuthPageController
+│   │                                BookingsController CardPaymentsController DriverController
+│   │                                FilesController Food/ HealthController LocationsController
+│   │                                MerchantController NotificationsController PageController
+│   │                                Partner/ PaymentsController PaymentMethodsController
+│   │                                PublicTrackingController RouteController Shop/ TrackingController
+│   ├── Http/Middleware/             AppSessionGuard, RequireAdmin, RequireWebAdmin, FeatureFlag,
+│   │                                FoodAuth, PartnerAuth, Idempotency, TrustProxy, rate limiters
+│   ├── Models/                      Eloquent models (AppUser, Booking, Order, Merchant, …)
+│   ├── Repositories/                data-access layer
+│   └── Services/                    ★ business logic — FareService, FoodMoneyService,
+│                                    ShopMoneyService, VatService, AppSessionsService,
+│                                    EmailService, FileGrantsService, ObjectStorageService, TapService
+├── bootstrap/app.php                Laravel 11 bootstrap (schedule via withSchedule,
+│                                    #   commands via withCommands, broadcasting registered)
+├── config/                          app, auth, alabiq, services (incl. `shop_enabled`),
+│                                    #   broadcasting, caching, database, filesystems, mail,
+│                                    #   queue, rate-limiter
+├── database/
+│   ├── migrations/                  25 migrations (mirror the archived Express schema)
+│   └── seeders/                     Admin, ReferenceData, DatabaseSeeder
+├── routes/
+│   ├── api.php                      full API route map (mirrors old Express routes)
+│   ├── web.php                      Blade site + admin portal routes
+│   ├── channels.php                 pusher private-channel auth
+│   └── console.php                  artisan commands
+├── resources/views/                 site/ (marketing), admin/, auth/, layouts/
+├── public/                          web root (index.php, built assets, .htaccess lsphp84 pin)
+├── tests/                           Unit/ (pure logic) + Feature/ (pgsql `alabiq_test`);
+│                                    bootstrap.php auto-creates the test DB
+├── Dockerfile                       multi-stage: Vite build → php-fpm
+├── docker-compose.yml               full local dev stack (DOCKER.md)
+├── docker-entrypoint.sh  nginx/  postgres/  store-assets/
+├── deploy/                          post-receive + server-deploy.sh — VPS push-to-deploy,
+│                                    #   INACTIVE since prod moved to shared hosting (kept
+│                                    #   for rollback/reference)
+├── docs/                            partner-api-openapi.yaml
+├── package.json / vite.config.js    Vite + Tailwind 4 + Alpine.js asset pipeline
+└── archive/
+    ├── full-laravel-migration/      old Express backend/ + React frontend/ (Phase 3
+    │                                #   Blade-port reference; DELETE in Phase 4)
+    ├── PROJECT-ANALYSIS-2026-10-06.md ⚠ pre-Docker analysis — historical only
+    └── README-legacy-supabase.md    ⚠ pre-Docker install guide — historical only
 ```
+
+**Deleted on `feat/full-laravel` (2026-11-19):** Node `backend/` (Express API, worker,
+`migrations/postgres/`), React `frontend/` (incl. Capacitor mobile apps and the iOS CI
+workflow), the Node `realtime/` SSE service, and `alabiq-web-main/` as a directory
+(the Laravel app moved from `alabiq-web-main/laravel/` up to the repo root).
 
 ---
 
 ## 4. Hard invariants — do not break
 
-1. **Strict layering, one direction:** `routes/` → `controllers/` → `lib/` (→ `repositories/`
-   for DB access). Controllers never hold business logic; `lib/config.js` is the only file
-   allowed to read `process.env`.
-2. **Money is sacred:** all fare/fee/margin/VAT math is server-side in `lib/` (`fare.js`,
-   `foodMoney.js`, `shopMoney.js`, `money.js`, `vat.js`, `ledger.js` double-entry,
-   `merchantCredit`-style modules). Client amounts are ignored.
-3. **No multi-table transactions:** concurrency is arbitrated by unique indexes +
-   compare-and-swap. Moving multi-writes into Postgres RPCs is the known top integrity fix.
-4. **Auth:** app-owned sessions in Postgres (`app_sessions`). Roles resolved server-side
-   from `profiles` + `ADMIN_EMAILS` — never trust client-sent roles.
-5. **Payments:** STC Pay proof upload → private bucket → manual admin verify.
-   `AUTO_VERIFY_STCPAY_TEST_MODE` must be `false` in prod (boot warning if on).
-   Tap webhook (`/api/payments/webhooks/tap`) is exempt from the general rate limiter
-   (signature-checked, own limiter — do not remove the skip).
-6. **Feature flags:** `SHOP_ENABLED` gates shop routes on **both** backend and frontend.
-7. **Rate limiting:** general 240/min (map-heavy screens legitimately burst), auth 20/min.
-   `trust proxy = 1` — required behind nginx.
+1. **Strict layering, one direction:** `routes/` → `Http/Controllers/` → `Services/`
+   (→ `Repositories/` for DB access). Controllers stay thin HTTP in/out; business
+   logic lives in `app/Services/`. `config/` is the only place that reads `env()`.
+2. **Money is sacred:** all fare/fee/margin/VAT math is server-side in
+   `FareService`, `FoodMoneyService`, `ShopMoneyService`, `VatService` (+ ledger).
+   Client-sent amounts are ignored.
+3. **Auth:** scrypt password compatibility with legacy Node hashes is mandatory —
+   `ScryptHasher` must match Node `scrypt` exactly (`Hash::check` verified).
+   `AppUser::getAuthPasswordName()` = `password_hash`; the `web` session guard
+   verifies scrypt hashes for the Blade admin portal; default guard stays `api`
+   (Sanctum). Roles resolved server-side from `profiles` + `ADMIN_EMAILS` — never
+   trust client-sent roles.
+4. **Payments:** STC Pay proof upload → private bucket → manual admin verify.
+   `AUTO_VERIFY_STCPAY_TEST_MODE` must be `false` in prod. Tap webhook is
+   signature-checked with its own rate limit — do not remove the exemption.
+5. **Feature flags:** `SHOP_ENABLED` → `config/services.php` `shop_enabled` gates
+   shop routes on both web and API.
+6. **Rate limiting:** general + auth limiters configured in `config/rate-limiter.php`;
+   `TrustProxy` middleware is required behind nginx/Apache.
+7. **Shared DB schema:** Laravel migrations must stay in sync with the archived
+   Express schema (`archive/full-laravel-migration/backend/migrations/postgres/`)
+   until Phase 4 deletes the archive.
+8. **Driver-aware migrations:** no pgsql-only statements without a mysql guard —
+   **production runs MariaDB** on the shared host.
 
 ---
 
 ## 5. Environment
 
-### Backend (`alabiq-web-main/backend/.env`)
+### Laravel (`.env` at repo root)
 
-`DATABASE_URL` · `APP_SIGNING_KEY` · `SMTP_HOST/USER/PASSWORD` · `MAIL_FROM` ·
-`CORS_ORIGINS` (comma-separated allow-list; empty = loud warning + permissive pilot) ·
-`AUTO_VERIFY_STCPAY_TEST_MODE` · `SMART_ALABIQ_STCPAY_NUMBER` · `ADMIN_EMAILS` ·
-`VAPID_PUBLIC_KEY/PRIVATE_KEY/SUBJECT` · `MAPBOX_ACCESS_TOKEN`
+`APP_KEY` · `APP_ENV` · `DB_CONNECTION` (`pgsql` in Docker dev; `mysql` on the
+shared-hosting production) · `DB_HOST/DB_PORT/DB_DATABASE/DB_USERNAME/DB_PASSWORD` ·
+`SESSION_DRIVER` · `CACHE_STORE` · `QUEUE_CONNECTION` · `BROADCAST_CONNECTION=pusher` ·
+`PUSHER_APP_ID/KEY/SECRET/CLUSTER` · `MAPBOX_ACCESS_TOKEN` ·
+`AWS_ENDPOINT/ACCESS_KEY_ID/SECRET_ACCESS_KEY/BUCKET` (+ `AWS_USE_PATH_STYLE_ENDPOINT`)
+· `MAIL_MAILER` + `MAIL_HOST/MAIL_PORT/MAIL_USERNAME/MAIL_PASSWORD/MAIL_FROM_ADDRESS` ·
+`SMART_ALABIQ_STCPAY_NUMBER/NAME` · `AUTO_VERIFY_STCPAY_TEST_MODE` ·
+`TAP_SECRET_KEY/TAP_PUBLIC_KEY/TAP_MERCHANT_ID` ·
+`VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY/VAPID_SUBJECT` · `SHOP_ENABLED` · `ADMIN_EMAILS`
 
-### Frontend (`alabiq-web-main/frontend/.env`)
-
-`VITE_API_BASE` · `VITE_MAP_PROVIDER` (google) · `VITE_GOOGLE_MAPS_BROWSER_KEY` ·
-`VITE_GOOGLE_MAP_ID` · `VITE_MAPBOX_ACCESS_TOKEN` · `VITE_MAPBOX_STYLE`
-
-### Compose (repo `alabiq-web-main/.env`, from `.env.docker.example`)
-
-`POSTGRES_DB/USER/PASSWORD` · `APP_DB_USER/PASSWORD` · `REALTIME_PUBLISH_TOKEN` ·
-`MINIO_ROOT_USER/PASSWORD` · `WEB_PORT` (default 8080)
-
-### Laravel (`alabiq-web-main/laravel/.env`)
-
-`APP_KEY` · `DB_CONNECTION=pgsql` · `DB_HOST/DB_PORT/DB_DATABASE/DB_USERNAME/DB_PASSWORD` ·
-`SESSION_DRIVER=database` · `SANCTUM_STATEFUL_DOMAINS` · `MAPBOX_ACCESS_TOKEN` ·
-`MINIO_ENDPOINT/KEY/SECRET/BUCKET` · `MAIL_MAILER/SMTP_*` · `STC_PAY_NUMBER/RECIPIENT` ·
-`TAP_API_KEY/TAP_SECRET_KEY` · `VAPID_PUBLIC_KEY/PRIVATE_KEY/SUBJECT` ·
-`FEATURE_SHOP_ENABLED` · `ADMIN_EMAILS`
+> ✅ `.env.example` exists at the repo root (restored 2026-11-19) — `cp .env.example .env`
+> covers the compose-required `POSTGRES_PASSWORD` / `APP_DB_PASSWORD` /
+> `MINIO_ROOT_PASSWORD` plus the Laravel keys above.
 
 ---
 
 ## 6. Commands
 
 ```bash
-# Docker dev stack (full system: http://localhost:8080)
-cd alabiq-web-main && cp .env.docker.example .env && cp backend/.env.example backend/.env
+# Docker dev stack (full system: http://localhost:8080, alias 127.0.0.1:4001)
+cp .env.example .env  # then set APP_KEY + the compose passwords (§5)
 docker compose up --build
 docker compose down          # keep data · add -v to ERASE db/redis/objects
 
-# Backend (standalone, needs DATABASE_URL + deps)
-cd alabiq-web-main/backend
-npm run dev                  # node --watch server.js
-npm test                     # node --test (358 tests incl. syntax gate)
-npm run db:migrate           # node scripts/migrate.js
-
-# Frontend
-cd alabiq-web-main/frontend
-npm run dev                  # vite
-npm run build                # vite build → dist/
-npm run mobile:sync          # build + cap sync (Android/iOS)
-
-# Laravel (migration stack)
-cd alabiq-web-main/laravel
-composer install                         # install deps
-cp .env.example .env                     # configure
-php artisan key:generate                 # generate APP_KEY
-php artisan migrate --seed               # run migrations + seeders
-php artisan serve                        # dev server (port 8000)
-# OR: docker compose -f docker-compose.laravel.yml up --build  # full stack
-
-# Useful Laravel scripts
+# Laravel
+composer install
+php artisan key:generate
+php artisan migrate --seed   # migrations + Admin/ReferenceData seeders
+php artisan serve            # dev server (port 8000) — needs DB_* + SESSION_DRIVER=file
+php artisan test             # PHPUnit — Unit + Feature (auto-creates alabiq_test DB)
+php artisan route:clear      # after controller moves (stale routes-v*.php cache)
 php artisan db:seed --class=AdminSeeder
-php artisan db:seed --class=ReferenceDataSeeder
-php artisan make:controller Food/RestaurantsController   # scaffold missing controllers
-php artisan test                         # PHPUnit (empty — Phase D)
+vendor/bin/pint              # PSR-12 formatting
 
-# Useful backend scripts (Express)
-npm run seed:admin / seed:super-admin / set:password
-npm run import:supabase / :verify / :cleanup    # legacy Supabase → Postgres ETL
-npm run migrate:media-urls:apply                 # rewrite stored media URLs
-npm run reset:orders · delete:account
+# Frontend assets (Vite — Blade layouts consume the build)
+npm install
+npm run dev                  # vite dev server
+npm run build                # vite build → public/build
+
+# Shared-hosting production deploy (summary — full procedure: DEPLOYMENT-PLAN.md §10)
+rsync -az --delete --exclude='.env' --exclude='.env.*' --exclude='vendor/' \
+  --exclude='node_modules/' --exclude='storage/' --exclude='archive/' \
+  -e "ssh -p 65002" ./ u805024096@178.16.135.22:.../public_html/
+ssh -p 65002 u805024096@178.16.135.22 \
+  'cd .../public_html && COMPOSER_ALLOW_SUPERUSER=1 /opt/alt/php84/usr/bin/php \
+   /usr/local/bin/composer install --no-dev --optimize-autoloader \
+   --ignore-platform-req=ext-pdo_pgsql --ignore-platform-req=ext-redis \
+   && /opt/alt/php84/usr/bin/php artisan migrate --force'
 ```
+
+**Historical (archived Express/React stack — reference only, do not run):**
+`backend/` used `npm run dev|test|db:migrate`, `frontend/` used `npm run dev|build|mobile:sync`.
+The old checkout layout, topology, and cutover procedure are in `DEPLOYMENT-PLAN.md` §10.
 
 ---
 
 ## 7. Git & branches
 
 - Remotes: `origin` = `git@github.com:renitreni/alabiq.git` (canonical since the
-  2026-11-13 rebrand; history is unrelated to the old SmartMappiaa repos). The
-  old PAT-bearing remotes are gone from this clone.
-- Deploy conduit: server bare repo `root@187.127.100.178:/opt/SmartMappiaa/smartmappiaa.git`,
-  branch `full` (**force-push** — unrelated histories), consumed by the live
-  checkout per DEPLOYMENT-PLAN.md (2026-11-13 entry). **Push-to-deploy is live
-  (2026-11-14):** any push to `full` fires the bare repo's `post-receive` hook →
-  `/opt/SmartMappiaa/deploy.sh` (build api/worker/migrate/frontend, migrate, up -d,
-  health-check, swap `/var/www/alabiq`). Scripts: `deploy/post-receive` +
-  `deploy/server-deploy.sh`; log: `/var/log/alabiq-deploy.log`.
-- Active branches: `main` (canonical — 2026-11-18: both feature branches merged
-  into it and deleted). `feat-laravel-testing-phase-d-e` merged fully contained
-  `feat-restaurant-delivery-api`, so both fast-forwarded.
-- Recent work: 2026-11-18 — one-restaurant-one-app scoped customer PWA
-  (`/app/:hash`, migration 0012 `merchants.public_hash`/`brand_color`,
-  per-restaurant PWA manifest, admin app link, `/demo/restaurant` fixture demo);
-  Laravel Docker/scrypt hasher fixes. Earlier: Phase 7 (2026-11-13) — partner
-  item-pricing validation + migrations 0010–0011, `payment_method 'external'`,
-  `delivery_quotes.distance_km`, worker service enabled (Redis GPS hot path),
-  full Alabiq rebrand (web/Android/iOS). Also fixed: truncated
-  `deliveriesController.js` (API boot crash, now covered by
-  `test/syntaxGate.test.js`), worker webhook import bug, undeclared `redis`
-  dependency.
+  2026-11-13 rebrand). The old PAT-bearing remotes are gone from this clone.
+- Deploy conduit (VPS): server bare repo `root@187.127.100.178:/opt/SmartMappiaa/smartmappiaa.git`,
+  branch `full` (**force-push** — unrelated histories) → `post-receive` →
+  `/opt/SmartMappiaa/deploy.sh`; scripts at `deploy/`. **Inactive since 2026-11-19** —
+  production moved to shared hosting (deploy = rsync + artisan, §6). Kept for
+  rollback/reference.
+- Active branch: `feat/full-laravel` (2026-11-19) — full-Laravel takeover:
+  - `7b74221 refactor!: full-Laravel takeover — laravel/ moves to app root, Node backend + React frontend archived`
+  - `175fa11 feat!: pusher.com realtime replaces Node SSE service; mobile implementation removed`
+  - `f4a7f03 fix(shared-hosting): close schema gaps and pgsql-only queries for MariaDB deploy`
+  - `8378ca0 docs(deploy): shared-hosting redeploy entry — full-Laravel structure, pusher, HTTPS smoke`
+  Earlier history (merged to `main`): Laravel Phase A–D (models, migrations,
+  middleware, money services, 97 unit tests), one-restaurant-one-app customer PWA,
+  restaurant-delivery API, Phase 7 partner item-pricing, full Alabiq rebrand.
 
 ---
 
-## 8. Known gaps & risks (carry-over, verified where noted)
+## 8. Known gaps & risks
 
-1. Multi-table writes without transactions (crash = corruption window).
-2. Test coverage is backend-unit only; no frontend/e2e tests.
-3. **Doc drift (partially resolved 2026-11-12):** stale Supabase-era root `README.md` and
-   `PROJECT-ANALYSIS.md` were moved to `archive/`. Still open: `backend/README.md`
-   (Supabase/SQLite-session era) needs a refresh.
-4. `mapbox-gl` dependency unused (Google is the provider); `api/index.js` + `vercel.json` legacy.
-5. `/admin/ferdz` demo route in the prod route table — ensure it's protected/disabled.
-6. `AUTO_VERIFY_STCPAY_TEST_MODE` foot-gun (see §4).
-7. No frontend 404 catch-all (unknown routes render blank).
-8. No staging env — dev → prod VPS directly.
-9. Root `.gitignore` doesn't cover `.env*` broadly; credentials safety relies on
-   `.git/info/exclude` (machine-local) for some files.
-10. Server credentials file + token-bearing remote live in the working tree — never
-    commit, rotate the exposed PAT.
+**From `PLAN-full-laravel.md` (current truth):**
 
-**Laravel Migration Risks:**
-11. **12 controllers partially implemented** (Phase B) — most routes return 501 stubs; need full implementation
-12. ~~Money services not ported~~ — ✅ **RESOLVED** (Phase C complete)
-13. ~~No PHPUnit tests~~ — ✅ **RESOLVED** (97 unit tests passing, Phase D complete)
-14. **Scrypt password compatibility** — `ScryptHasher` must match Node `scrypt` exactly (verified via `Hash::check`)
-15. **Shared DB schema drift risk** — Laravel migrations must stay in sync with Express `migrations/postgres/`
-16. **Realtime parity** — Express uses custom SSE (`/api/events`); Laravel plans Reverb + SSE fallback
-17. **Zero-downtime cutover untested** — nginx upstream switch procedure needs validation
-18. **Feature tests require PostgreSQL** — Unit tests use SQLite; Feature tests need a test PostgreSQL instance
+1. **Phase 2.2 dispatch parity pending:** `driver_locations` and `dispatch_offers`
+   (live GPS fixes, driver offer fan-out) have **no Laravel migration/mirror** — they
+   were Express-only. Porting them belongs to Phase 2.2.
+2. **Phase 3 portal long tail:** the public site + admin portal are ported to Blade,
+   but the customer/driver/merchant React portals (28.5k+ lines of JSX) are not —
+   that is the real remaining cost. Pusher **private-channel auth wiring ships with
+   the Phase 3 portal** — broadcasting scaffolding is registered, but client
+   subscription/auth is not done.
+3. **Phase 4 cutover & cleanup:** archive deletion (`archive/full-laravel-migration/`),
+   final cutover validation, env/docs sweep.
+4. **Feature tests require PostgreSQL** — they create/use the `alabiq_test` DB;
+   SQLite is not the test path.
+5. No frontend e2e tests; no staging env (dev → shared-hosting prod directly).
+6. **Production runs MariaDB** — every migration/query addition needs a
+   driver-awareness check (see invariant 8).
+7. `AUTO_VERIFY_STCPAY_TEST_MODE` foot-gun (see §4).
+8. **Production host constraints (accepted, documented in DEPLOYMENT-PLAN §10):**
+   no Redis/MinIO/SMTP on shared hosting, `SHOP_ENABLED=false`, `PUSHER_APP_*`
+   unset — closing these is a deliberate ops decision, not drift.
+
+**Historical (resolved or archived with the Express stack):** multi-table writes
+without transactions, doc drift around Supabase, `mapbox-gl` unused dep, missing
+frontend 404 catch-all, `/admin/ferdz` demo route — all Express/React-era; verify
+against current code before re-raising.
 
 ---
 
 ## 9. Working agreements for AI sessions
 
-- Work in `alabiq-web-main/`; the repo root holds docs/backups only.
-- **Never** SSH to the prod VPS or touch live pages unless the owner explicitly asks.
-- Targeted edits only; match existing naming/structure; no new dependencies without asking.
-- **Express Backend:** CommonJS, no build step, no TypeScript. **Laravel Backend:** PHP 8.3+, PSR-12, strict types where practical. Frontend: ESM + JSX.
-- Run `npm test` in `backend/` after changing money/auth/dispatch/repository logic. Run `php artisan test` in `laravel/` after changing Laravel controllers/services.
-- Docker-aware: file permissions, volume mounts (`postgres_data`, `redis_data`,
-  `object_data` are persistent), no extra host port bindings (neighbors share the box).
-- **Laravel migration:** When changing Laravel code, run `php -l` on edited files; keep `routes/api.php` in sync with Express routes; maintain scrypt password compatibility.
-- When changing architecture, env vars, or deployment: **update this file** (and DOCKER.md /
-  DEPLOYMENT-PLAN.md where relevant) in the same change.
+- Work at the **repo root** — it is the Laravel app; there is no `alabiq-web-main/`
+  or `laravel/` subdirectory anymore.
+- **Never** SSH to production (shared host or VPS) or touch live pages unless the
+  owner explicitly asks.
+- Targeted edits only; match existing naming/structure; no new dependencies or
+  architecture changes without asking.
+- **Backend:** PHP 8.2+, PSR-12, strict types where practical (run `vendor/bin/pint`
+  on edited files). Blade + Tailwind 4 for web UI; Alpine.js for sprinkles.
+- Run `php artisan test` after changing controllers/services/migrations; run
+  `php -l` on edited files as a fast gate.
+- Keep `routes/api.php` in sync with the archived Express route contracts; keep
+  migrations driver-aware (pgsql + mysql) — **prod is MariaDB**.
+- Docker-aware (dev stack): persistent volumes (`postgres_data`, `redis_data`,
+  `object_data`), no extra host port bindings (neighbors share the box).
+- After controller moves: `php artisan route:clear` (stale `routes-v*.php` cache
+  breaks `route:list` and named-route resolution).
+- When changing architecture, env vars, or deployment: **update this file** (and
+  `DOCKER.md` / `DEPLOYMENT-PLAN.md` / `PLAN-full-laravel.md` where relevant) in the
+  same change.
+
+### Blade web layer (Phase 3, started 2026-11-19)
+
+The Laravel app serves a Blade port of the archived React frontend (source of truth
+for markup/copy: `archive/full-laravel-migration/frontend/`):
+
+- **Public marketing site** — `routes/web.php` → `PageController`: `/` (landing with
+  live merchant data from the `merchants`/`merchant_hours`/`app_settings` tables),
+  `/services` + 3 subpages, `/support`, `/help-center`, and the legal pages
+  (`/privacy-policy`, `/terms-of-service`, `/cookie-preferences`, `/account-deletion`).
+  Views: `resources/views/site/`, layout `resources/views/layouts/site.blade.php`.
+- **Admin portal** — session-guard login at `/login` (`AuthPageController`), then
+  `/admin*` behind the `admin.web` middleware (`RequireWebAdmin`, redirects guests
+  to `/login`). `Admin\PagesController` renders dashboard, bookings, drivers
+  (approve/reject POST implemented — mirrors Express `setDriverApproval`),
+  restaurant-orders, food, shop (gated on `services.shop_enabled`), reports
+  (+CSV export), errors, admins, accounts, integrations, settings (writes
+  `app_settings`, pgsql jsonb-cast / MySQL-portable). Views: `resources/views/admin/`,
+  layout `resources/views/layouts/admin.blade.php`.
+- **Auth wiring:** `AppUser::getAuthPasswordName()` returns `password_hash` so the
+  `web` session guard verifies against scrypt hashes; the default guard stays `api`.
+  Global exception renderables in `bootstrap/app.php` only answer JSON when
+  `$request->expectsJson()` — web requests get Laravel's default redirects/pages.
+- **Not ported (deliberately):** payment proof verify/reject and other money-moving
+  admin actions were gated until payments-lib parity — verify current status in
+  `routes/web.php` before assuming. The customer/driver/merchant React portals are
+  not part of this pass (see risk 2).
+- Host-side `.env` needs `DB_*` (127.0.0.1, `alabiq_app`), `SESSION_DRIVER=file`,
+  `CACHE_STORE=file` to run `php artisan serve` outside Docker.
 
 ---
 
@@ -354,13 +351,12 @@ npm run reset:orders · delete:account
 
 | Need | Read |
 |---|---|
-| Current system truth (Express) | this file → `alabiq-web-main/DOCKER.md` |
+| Current system truth | this file → `DOCKER.md` |
 | Repo landing / orientation | `README.md` |
-| Prod topology, cutover, incidents | `DEPLOYMENT-PLAN.md` (§1 layout, §5 topology, §10 log) |
-| Historical pre-Docker analysis | `archive/` (⚠ both files predate the Docker migration) |
-| **Express Backend** endpoint/auth details | `alabiq-web-main/backend/README.md` (⚠ partially stale) |
-| **Laravel Migration** status & structure | this file (§2), `alabiq-web-main/laravel/` |
-| Laravel routes reference | `alabiq-web-main/laravel/routes/api.php` |
-| Laravel models reference | `alabiq-web-main/laravel/app/Models/` |
-| Env var reference (Express) | `backend/.env.example`, `frontend/.env.example`, `.env.docker.example` |
-| Env var reference (Laravel) | `laravel/.env.example`, `laravel/config/*.php` |
+| Prod topology, cutover, incidents, deploy procedure | `DEPLOYMENT-PLAN.md` (§10 log — 2026-11-19 entry is the live one) |
+| Migration plan, phases, risks, addenda | `PLAN-full-laravel.md` |
+| Historical pre-Docker analysis | `archive/PROJECT-ANALYSIS-2026-10-06.md` (⚠ historical only) |
+| Historical pre-Docker install guide | `archive/README-legacy-supabase.md` (⚠ historical only) |
+| Old Express/React source (Blade-port reference) | `archive/full-laravel-migration/{backend,frontend}/` |
+| API contract reference | `routes/api.php`, `docs/partner-api-openapi.yaml` |
+| Env var reference | `.env.example`, `config/*.php` |
