@@ -145,6 +145,35 @@ New checkout at `/opt/SmartMappiaa/alabiq-docker` (old checkout left untouched f
 
 ## 10. Implementation log
 
+### 2026-11-20 (evening) — Routine redeploy: path-relative Vite asset URLs ✅
+
+Commit `8d68ba4` (`app/Providers/AppServiceProvider.php`). Context: the
+`yaramay.online` zone hit expiry on 2026-11-19 and was parked on the
+registrar's `ns1/ns2.dns-expired.com` (SERVFAIL from 8.8.8.8/1.1.1.1; whois
+showed `autoRenewPeriod`, expiry 2027-11-19 — renewal processed but NS not
+restored). Server itself stayed healthy, but `@vite` rendered **absolute**
+`https://alabiq.yaramay.online/build/...` URLs, so the HTML shell loaded while
+every CSS/JS/webmanifest failed with `ERR_NAME_NOT_RESOLVED`. Fix: container
+`Vite::createAssetPathsUsing()` in `AppServiceProvider::boot()` emits
+origin-relative `/build/...` paths, so assets keep loading whenever the host is
+reachable (IP / hosts-file) during any future DNS outage. No migrations, no
+composer, no Vite rebuild (manifest-driven, runtime PHP only).
+
+**Procedure:** local verify via framework boot (scripted `bootstrap/app.php`
+render — `href|src="/build/assets/…"`); `php artisan test` → 97/97 Unit green
+(5 Feature `QueryException` — local Docker pgsql down, unrelated). Checksum
+dry-run (2 files: provider + this doc), rsync app root with §10 `.htaccess*`
+excludes, host `view:clear` → `view:cache` (green).
+
+**HTTPS smoke after (via `curl --resolve` — public DNS still parked at the
+time):** `/` 200 serving **only** relative `/build/assets/…` refs (0 absolute
+left), `/login` 200 same, `/build/assets/app-IprlBhKD.js` 200,
+`/admin` 302 → `/admin/login`, `/api/health` 503 degraded (by design).
+
+**Still open (ops, not code):** restore Hostinger nameservers for
+`yaramay.online` in the registrar panel — until then the site is unreachable
+by domain for real users regardless of this fix.
+
 ### 2026-11-20 — Routine redeploy: customer post-login redirect to demo restaurant + session-aware navbar ✅
 
 Commit `2e4f43d`. Blade-only (3 views: `auth/app-login`, `auth/app-signup`,
