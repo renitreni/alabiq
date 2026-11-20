@@ -13,8 +13,8 @@
 
     {{-- Navbar (Blade port of components/Navbar.jsx — same links, Alpine
          replaces framer-motion for the mobile drawer and scroll state) --}}
-    <nav x-data="{ open: false, scrolled: false }"
-         x-init="window.addEventListener('scroll', () => scrolled = window.scrollY > 10)"
+    <nav x-data="siteNav()"
+         x-init="init()"
          x-bind:class="scrolled ? 'bg-white/95 shadow-[0_8px_32px_rgba(249,115,22,0.10),0_2px_8px_rgba(0,0,0,0.06)]' : 'bg-white/80 shadow-[0_2px_4px_rgba(0,0,0,0.04)]'"
          class="w-full h-20 border-b border-brand-border px-6 md:px-20 flex items-center justify-between fixed top-0 left-0 z-50 transition-all duration-300">
 
@@ -58,13 +58,15 @@
             </a>
 
             <div class="flex items-center gap-2 shrink-0 ml-2">
-                <a href="/login" class="whitespace-nowrap text-sm font-bold px-3 py-2 rounded-full text-brand-dark hover:text-brand-orange transition-colors">Log in</a>
-                <a href="/services/food">
+                <a href="/login" x-show="!authed" x-cloak class="whitespace-nowrap text-sm font-bold px-3 py-2 rounded-full text-brand-dark hover:text-brand-orange transition-colors">Log in</a>
+                <a :href="authed ? '/demo/restaurant' : '/services/food'">
                     <span class="inline-block whitespace-nowrap bg-brand-orange text-white text-xs font-black px-5 py-3 rounded-full cursor-pointer shadow-md shadow-brand-orange/25 hover:shadow-xl hover:shadow-brand-orange/30 transition-shadow duration-300">
                         Order Now
                     </span>
                 </a>
-                <a href="/signup" class="whitespace-nowrap text-sm font-bold px-3 py-2 rounded-full text-brand-grey hover:text-brand-orange transition-colors">Sign up</a>
+                <a href="/signup" x-show="!authed" x-cloak class="whitespace-nowrap text-sm font-bold px-3 py-2 rounded-full text-brand-grey hover:text-brand-orange transition-colors">Sign up</a>
+                <button type="button" @click="signOut()" x-show="authed" x-cloak
+                        class="whitespace-nowrap text-sm font-bold px-3 py-2 rounded-full text-brand-grey hover:text-brand-orange transition-colors cursor-pointer">Sign out</button>
             </div>
         </div>
 
@@ -111,13 +113,67 @@
 
             <div class="p-6">
                 <div class="flex flex-col gap-2">
-                    <a href="/login" class="block text-center w-full font-black py-3 rounded-2xl text-sm text-brand-dark border border-brand-border">Log in</a>
-                    <a href="/services/food" class="block text-center w-full bg-brand-orange text-white font-black py-4 rounded-2xl text-sm shadow-lg shadow-brand-orange/25">Order Now</a>
-                    <a href="/signup" class="block text-center w-full font-black py-3 rounded-2xl text-sm text-brand-grey border border-brand-border">Sign up</a>
+                    <a href="/login" x-show="!authed" x-cloak class="block text-center w-full font-black py-3 rounded-2xl text-sm text-brand-dark border border-brand-border">Log in</a>
+                    <a :href="authed ? '/demo/restaurant' : '/services/food'" class="block text-center w-full bg-brand-orange text-white font-black py-4 rounded-2xl text-sm shadow-lg shadow-brand-orange/25">Order Now</a>
+                    <a href="/signup" x-show="!authed" x-cloak class="block text-center w-full font-black py-3 rounded-2xl text-sm text-brand-grey border border-brand-border">Sign up</a>
+                    <button type="button" @click="signOut()" x-show="authed" x-cloak
+                            class="block text-center w-full font-black py-3 rounded-2xl text-sm text-brand-grey border border-brand-border cursor-pointer">Sign out</button>
                 </div>
             </div>
         </div>
     </nav>
+
+    <script>
+        // Site navbar state — mirrors the app session token contract the login
+        // page uses: a valid sm_api_session marks the visitor as signed in
+        // (non-admin), swapping the auth CTAs for ordering + sign-out.
+        function siteNav() {
+            return {
+                open: false,
+                scrolled: false,
+                authed: false,
+
+                init() {
+                    window.addEventListener('scroll', () => this.scrolled = window.scrollY > 10);
+                    this.checkSession();
+                },
+
+                async checkSession() {
+                    const token = localStorage.getItem('sm_api_session');
+                    if (!token) return;
+                    try {
+                        const res = await fetch('/api/auth/session', {
+                            headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' },
+                        });
+                        if (!res.ok) { localStorage.removeItem('sm_api_session'); return; }
+                        const data = await res.json();
+                        // Admins keep the marketing CTAs; signed-in customers go straight to ordering.
+                        if ((data.user?.profile?.role ?? null) !== 'admin') this.authed = true;
+                    } catch (e) {
+                        // Offline/transient — leave the default signed-out state.
+                    }
+                },
+
+                async signOut() {
+                    const token = localStorage.getItem('sm_api_session');
+                    if (token) {
+                        try {
+                            await fetch('/api/auth/logout', {
+                                method: 'POST',
+                                headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' },
+                            });
+                        } catch (e) {
+                            // Token is dropped locally regardless of the revocation call.
+                        }
+                    }
+                    localStorage.removeItem('sm_api_session');
+                    this.authed = false;
+                    this.open = false;
+                    window.location.href = '/';
+                },
+            };
+        }
+    </script>
 
     <main>
         @yield('content')

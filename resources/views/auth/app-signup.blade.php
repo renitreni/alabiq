@@ -247,7 +247,7 @@
                     const next = new URLSearchParams(window.location.search).get('next');
                     const safe = next && next.startsWith('/') && !next.startsWith('//')
                         && next !== '/login' && next !== '/signup' && !next.startsWith('/admin');
-                    return safe ? next : '/';
+                    return safe ? next : '/demo/restaurant';
                 },
 
                 validate() {
