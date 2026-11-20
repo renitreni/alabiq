@@ -21,11 +21,11 @@ class RequireWebAdmin
     {
         $user = Auth::guard('web')->user();
 
-        if (!$user) {
-            return redirect()->guest(route('login'));
+        if (! $user) {
+            return redirect()->guest(route('admin.login'));
         }
 
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403, 'Admin access required');
         }
 

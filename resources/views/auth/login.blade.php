@@ -50,7 +50,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="/login" class="space-y-5" x-data="{ show: false }">
+            <form method="POST" action="/admin/login" class="space-y-5" x-data="{ show: false }">
                 @csrf
 
                 <label class="block">

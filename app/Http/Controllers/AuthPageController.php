@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Session-based login for the Blade admin portal. Uses the `web` guard so
@@ -29,7 +30,7 @@ class AuthPageController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (!Auth::guard('web')->attempt([
+        if (! Auth::guard('web')->attempt([
             'email' => $credentials['email'],
             'password' => $credentials['password'],
         ], $request->boolean('remember'))) {
@@ -40,7 +41,7 @@ class AuthPageController extends Controller
 
         $user = Auth::guard('web')->user();
 
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -64,7 +65,7 @@ class AuthPageController extends Controller
 
         // Who has been signing in — the Admins tab reads this table.
         DB::table('admin_login_events')->insert([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id' => (string) Str::uuid(),
             'profile_id' => $user->id,
             'email' => $user->email,
             'role' => $user->profile?->role ?? 'admin',
@@ -82,6 +83,6 @@ class AuthPageController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('admin.login');
     }
 }

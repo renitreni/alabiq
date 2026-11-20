@@ -331,9 +331,16 @@ for markup/copy: `archive/full-laravel-migration/frontend/`):
   one-restaurant customer app: fixture-only menu (no DB reads/writes) served
   by `PageController::demoRestaurant`, cart is in-memory Alpine state, checkout
   disabled. Blade port of the archived React `/demo/restaurant` page.
-- **Admin portal** — session-guard login at `/login` (`AuthPageController`), then
-  `/admin*` behind the `admin.web` middleware (`RequireWebAdmin`, redirects guests
-  to `/login`). `Admin\PagesController` renders dashboard, bookings, drivers
+- **Admin portal** — session-guard login at `/admin/login` (`AuthPageController`,
+  route name `admin.login`), then `/admin*` behind the `admin.web` middleware
+  (`RequireWebAdmin`, redirects guests to `admin.login`). The public `/login`
+  path is the **app sign-in page** (`auth.app-login`, `Route::view`): a Blade
+  shell that posts to `/api/auth/login` in the browser (same token contract as
+  the mobile apps), stores the token in localStorage under `sm_api_session`,
+  and redirects by role (admin → `/admin`, others → safe `next` or `/`).
+  `/signup` (`auth.app-signup`) posts to `/api/auth/signup` (same contract as
+  the mobile apps), then auto-signs-in via `/api/auth/login` and lands by role.
+  `Admin\PagesController` renders dashboard, bookings, drivers
   (approve/reject POST implemented — mirrors Express `setDriverApproval`),
   restaurant-orders, food, shop (gated on `services.shop_enabled`), reports
   (+CSV export), errors, admins, accounts, integrations, settings (writes

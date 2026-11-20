@@ -32,10 +32,19 @@ Route::get('/account-deletion', [PageController::class, 'accountDeletion'])->nam
 // (Blade port of the archived React /demo/restaurant sales-demo page).
 Route::get('/demo/restaurant', [PageController::class, 'demoRestaurant'])->name('demo.restaurant');
 
-// --- Session auth (admin portal) ----------------------------------------
-Route::get('/login', [AuthPageController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthPageController::class, 'login'])->middleware('throttle:20,1');
+// --- Session auth (admin portal / Control Center) ------------------------
+// The Control Center login lives under /admin so the public /login path can
+// serve the app sign-in page (API token flow, see auth.app-login below).
+Route::get('/admin/login', [AuthPageController::class, 'showLogin'])->name('admin.login');
+Route::post('/admin/login', [AuthPageController::class, 'login'])->middleware('throttle:20,1');
 Route::post('/logout', [AuthPageController::class, 'logout'])->name('logout');
+
+// --- App sign-in (customer-facing) ----------------------------------------
+// Blade shell only: the form posts to /api/auth/login in the browser — the
+// same token contract the mobile apps use — and stores sm_api_session in
+// localStorage before redirecting by role.
+Route::view('/login', 'auth.app-login')->name('login');
+Route::view('/signup', 'auth.app-signup')->name('signup');
 
 // --- Admin portal (Blade) -------------------------------------------------
 Route::prefix('admin')->name('admin.')->middleware('admin.web')->group(function () {
