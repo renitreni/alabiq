@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Foundation\Vite;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,5 +30,12 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
+
+        // Emit path-relative Vite asset URLs (/build/...) instead of absolute
+        // ones, so CSS/JS keep loading when DNS for the app domain is down
+        // and the page is reached by IP or a hosts-file override.
+        app(Vite::class)->createAssetPathsUsing(
+            fn (string $path, ?bool $secure = null) => Str::start($path, '/')
+        );
     }
 }
