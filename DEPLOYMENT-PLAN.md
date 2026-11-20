@@ -145,6 +145,24 @@ New checkout at `/opt/SmartMappiaa/alabiq-docker` (old checkout left untouched f
 
 ## 10. Implementation log
 
+### 2026-11-20 — Routine redeploy: customer post-login redirect to demo restaurant + session-aware navbar ✅
+
+Commit `2e4f43d`. Blade-only (3 views: `auth/app-login`, `auth/app-signup`,
+`layouts/site`) — non-admin sign-in/sign-up fallback destination is now
+`/demo/restaurant`; the site navbar checks `sm_api_session` via
+`/api/auth/session` and swaps Log in/Sign up for Order Now → `/demo/restaurant`
++ Sign out (`POST /api/auth/logout` + localStorage cleanup) for signed-in
+customers. No migrations, no composer, no Vite rebuild.
+
+**Procedure:** checksum dry-run (only the 3 view files differ in content;
+everything else timestamp-only; `.htaccess*` excluded per §10 gotcha), rsync
+app root, host `view:clear` → `view:cache` (green).
+
+**HTTPS smoke after (all green):** `/` 200, `/login` 200, `/demo/restaurant`
+200, `/api/health` 503 degraded (by design). Content verification on live HTML:
+landing page serves `siteNav()` + 2× `/demo/restaurant` hrefs + Sign out
+buttons; `/login` + `/signup` both render `safe ? next : '/demo/restaurant'`.
+
 ### 2026-11-19 (evening) — Routine redeploy: demo restaurant page + dark login/admin shell ✅
 
 Commits `3ec94e2` (demo restaurant, login redesign, UserSeeder, app.css fix),
